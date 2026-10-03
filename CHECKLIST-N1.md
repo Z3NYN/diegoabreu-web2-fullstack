@@ -16,7 +16,7 @@ Referência: Avaliação N1 — Checklist e Aulas 01 a 06. Verificado em 03/10/2
 | Axios services/api.ts, baseURL e CrossOrigin | Implementado e verificado | services/api.ts, controllers, SecurityConfig; preflight e integração no navegador. |
 | components: listagem, item via props, formulário controlado e hooks | Implementado e verificado | CadastroList, CadastroItem, CadastroForm; useState e useEffect em CadastroPage para carregar API. |
 | pages: UsuariosPage PermissoesPage e página própria | Implementado e verificado | Páginas configuram CadastroPage, que reutiliza lógica e estados das telas. |
-| App apenas renderizando páginas | Implementado e inspecionado | App renderiza Layout, que compõe a página selecionada, sem CRUD em App. |
+| App apenas renderizando páginas | Implementado e inspecionado | App compõe AuthGate, ConfirmarEmailPage ou RedefinirSenhaPage; AuthGate libera Layout após validar a sessão. Sem CRUD em App. |
 | Editar e Excluir recarregam lista | Implementado e verificado no navegador | CadastroPage recarrega após POST/PUT/DELETE. |
 | CRUD no navegador das três entidades | Implementado e verificado | Cadastro → listagem → edição → exclusão executado em Usuario, Permissao e Produto; registros descartáveis removidos. |
 | React → API → H2 integrado | Implementado e verificado | Servidores simultâneos, operações no navegador e reinício do backend. |
@@ -24,7 +24,7 @@ Referência: Avaliação N1 — Checklist e Aulas 01 a 06. Verificado em 03/10/2
 
 ## Evidências de execução
 
-- Maven package: JAR gerado; 12 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
+- Maven package: JAR gerado; 20 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
 - npm ci concluído; compilação TypeScript/Vite e lint sem avisos.
 - CRUD manual no navegador das três entidades.
 - Erro do service apresentado no frontend e persistência após reinício. Layout inspecionado em desktop e viewport de 390 × 844.
@@ -41,4 +41,15 @@ O envio a uma caixa real depende da configuração de conta/remetente/chave SMTP
 
 Validação adicional: envio pelo protocolo SMTP a um servidor local de teste aprovado. Entrega externa Brevo pendente de criação da conta e configuração das credenciais.
 
-Auditoria ampliada registrada em AUDITORIA.md: correções de validação, erros HTTP, interface, script SMTP e isolamento local. Doze testes aprovados, build/lint e auditoria npm sem ocorrências.
+Auditoria ampliada registrada em AUDITORIA.md: correções de validação, erros HTTP, interface, script SMTP e isolamento local. A consulta anterior ao npm não apontou vulnerabilidades conhecidas.
+
+## Evolução solicitada: acesso autenticado e recuperação
+
+- Tela de login como entrada da plataforma; conta não confirmada não pode entrar.
+- Registro com senha BCrypt, confirmação por e-mail e reenvio público por endereço.
+- API exige sessão também para acesso direto ao CRUD; proteção CSRF e cookie HttpOnly/SameSite=Lax.
+- Recuperação por SMTP com token aleatório de uso único, hash no banco, validade de 30 minutos e reenvio com invalidação do link anterior.
+- Redefinição da senha, troca de e-mail e exclusão da conta invalidam o acesso das sessões anteriores.
+- Testes HTTP e de concorrência aprovados; confirmação e recuperação enviadas a servidor SMTP local de teste.
+
+Conta Brevo e remetente Nexus verificados com o endereço autorizado pelo autor. SMTP configurado localmente; chave protegida pelo Windows em .nexus/smtp.clixml, fora do Git. Entrega a caixa real ainda aguarda verificação do cadastro e da recuperação pela conta do autor.

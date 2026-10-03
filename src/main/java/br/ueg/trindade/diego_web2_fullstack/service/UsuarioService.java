@@ -45,7 +45,12 @@ public class UsuarioService {
         Usuario current = repository.findParaAtualizar(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro não encontrado")); validar(value, id);
         boolean emailMudou = !value.getEmail().equals(current.getEmail());
         current.setNome(value.getNome()); current.setUsername(value.getUsername()); current.setEmail(value.getEmail());
-        if (emailMudou) { limparConfirmacao(current); if (emailService.habilitado()) enviar(current); }
+        if (emailMudou) {
+            current.setVersaoCredencial(current.getVersaoCredencial() + 1);
+            limparConfirmacao(current);
+            current.setRecuperacaoHash(null); current.setRecuperacaoExpiraEm(null); current.setRecuperacaoEnviadaEm(null);
+            if (emailService.habilitado()) enviar(current);
+        }
         return repository.save(current);
     }
     private void limparConfirmacao(Usuario usuario) {

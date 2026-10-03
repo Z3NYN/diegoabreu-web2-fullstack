@@ -1,6 +1,11 @@
-import Layout from './components/Layout';
+import AuthGate from './pages/AuthGate';
 import ConfirmarEmailPage from './pages/ConfirmarEmailPage';
+import RedefinirSenhaPage from './pages/RedefinirSenhaPage';
 export default function App() {
-  const token = new URLSearchParams(window.location.search).get('confirmar-email');
-  return token !== null ? <ConfirmarEmailPage token={token} /> : <Layout />;
+  const params = new URLSearchParams(window.location.search);
+  const confirmacao = params.get('confirmar-email');
+  const recuperacao = params.get('recuperar-senha');
+  if (confirmacao !== null) return <ConfirmarEmailPage token={confirmacao} />;
+  if (recuperacao !== null) return <RedefinirSenhaPage token={recuperacao} />;
+  return <AuthGate />;
 }

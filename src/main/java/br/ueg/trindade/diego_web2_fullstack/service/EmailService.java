@@ -20,6 +20,19 @@ public class EmailService {
         this.sender = sender; this.habilitado = habilitado; this.remetente = remetente; this.frontendUrl = frontendUrl;
     }
     public boolean habilitado() { return habilitado; }
+    public void exigirConfiguracao() {
+        if (!habilitado || sender.getIfAvailable() == null || remetente.isBlank()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "O envio de e-mails ainda não está configurado. Contate o administrador.");
+    }
+    public void enviarRecuperacao(String destinatario, String token) {
+        exigirConfiguracao();
+        SimpleMailMessage mensagem = new SimpleMailMessage();
+        mensagem.setFrom(remetente); mensagem.setTo(destinatario);
+        mensagem.setSubject("Recupere sua senha | Nexus");
+        mensagem.setText("Olá!\n\nDefina uma nova senha na Nexus pelo link:\n" + frontendUrl + "/?recuperar-senha=" + token
+            + "\n\nO link expira em 30 minutos e só pode ser usado uma vez. Se não solicitou a recuperação, ignore esta mensagem.\n\nNexus");
+        try { sender.getObject().send(mensagem); }
+        catch (MailException ex) { throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde."); }
+    }
     public void enviarConfirmacao(String destinatario, String token) {
         JavaMailSender mail = sender.getIfAvailable();
         if (!habilitado || mail == null || remetente.isBlank()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "O envio de e-mails ainda não está configurado. Contate o administrador.");

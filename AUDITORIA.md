@@ -4,13 +4,13 @@
 
 Os requisitos técnicos funcionais da N1 estão implementados e as verificações abaixo passaram. A aplicação foi publicada no [repositório GitHub](https://github.com/Z3NYN/diegoabreu-web2-fullstack), preservando os quatro commits anteriores. Compartilhamento com o professor e avaliação da regularidade do histórico continuam pendentes. Java 21 é o alvo de compilação, mas a execução foi verificada no JDK 22 disponível.
 
-A confirmação de e-mail tem implementação SMTP e testes de protocolo. A chegada por Brevo a uma caixa real **não foi verificada**: faltam criação da conta, verificação do remetente e configuração das credenciais. A aplicação não apresenta envio falso quando SMTP está desativado.
+A confirmação e a recuperação de senha têm implementação SMTP e testes de protocolo. Conta Brevo e remetente foram verificados, e as credenciais foram configuradas localmente com proteção do Windows. A chegada a uma caixa real **ainda aguarda verificação**. A aplicação não apresenta envio falso quando SMTP está desativado.
 
 ## Achados e correções
 
 | Prioridade | Problema identificado | Correção e verificação |
 | --- | --- | --- |
-| Alta para exposição em rede | CRUD acadêmico aberto sem autenticação, servidor podia aceitar conexões da rede | Backend limitado por padrão a 127.0.0.1; frontend também em loopback. Portas 8080 e 5173 conferidas. Acesso local não equivale a autenticação. |
+| Alta | CRUD acessível sem login | Sessão obrigatória para os três cadastros, CSRF nas escritas e login condicionado à confirmação do e-mail. Backend continua limitado a 127.0.0.1 por padrão. Testes de operações anônimas retornam 401. |
 | Média | Identificador abc retornava 403 no lugar de 400 porque o processamento de erros era bloqueado | Resposta JSON para parâmetro inválido; dispatch de erro permitido sem liberar acesso direto a outros caminhos. Teste falhou antes e passou após correção. |
 | Média | Preço com mais de duas casas podia ser arredondado silenciosamente; tamanho de campos excedia armazenamento | ProdutoService exige até duas casas e máximo 999999999,99; precisão do banco explícita. Nome até 120 e descrição até 255 no Service. Testes HTTP para entradas excessivas. |
 | Média | Verificação de username duplicado dependia apenas de consulta, sujeita a concorrência | Username normalizado para minúsculas e restrição única no banco, mantendo verificação amigável no Service. E-mail já era normalizado e único. |
@@ -22,13 +22,13 @@ A confirmação de e-mail tem implementação SMTP e testes de protocolo. A cheg
 
 ## Verificações executadas nesta auditoria
 
-- Maven package: **12 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
+- Maven package: **20 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
 - CRUD das três entidades, GET por id, atualização do registro existente, exclusão e erros 404: testes HTTP reais com servidor Spring e H2 em memória.
 - Entrada JSON inválida, id não numérico, caminho inexistente, limites de nome/descrição/preço: testes HTTP.
 - Senha e hash interno ocultos; tentativa de enviar emailConfirmado=true pelo cliente não confirma o e-mail; senha existente preservada no PUT: testes HTTP e banco.
 - E-mail inválido, normalização, duplicidade, expiração, uso único, troca de endereço, falha SMTP e intervalo de reenvio: testes de integração do Service. Nestes testes, EmailService é substituído por um mock.
 - Duas confirmações simultâneas com o mesmo token: apenas uma é aceita; teste de concorrência com duas threads e banco real de teste.
-- EmailService envia uma mensagem pelo protocolo SMTP a um servidor local de teste; assunto, destinatário, link e validade inspecionados. Não é teste de recebimento externo.
+- EmailService envia confirmação e recuperação pelo protocolo SMTP a um servidor local de teste; assunto, destinatário, link e validade inspecionados. Não é teste de recebimento externo.
 - Persistência em arquivo: Produto e Permissao criados pela API, servidor encerrado e reiniciado, dados recuperados e registros descartáveis removidos.
 - Frontend: npm run build e npm run lint aprovados. npm audit e npm audit --omit=dev retornaram zero vulnerabilidades conhecidas no momento da consulta.
 - Navegador: e-mail válido aceito; domínio sem ponto, dois @ e espaços rejeitados. Username com hífen aceito. Nenhum aviso/erro de script na consulta realizada.
@@ -51,18 +51,28 @@ A confirmação de e-mail tem implementação SMTP e testes de protocolo. A cheg
 | components: formulário controlado, listagem, item via props | Implementado e inspecionado |
 | useState e useEffect | State nos formulários e páginas; Effect na página para buscar dados; key recria o formulário ao trocar edição, conforme aula |
 | pages UsuariosPage/PermissoesPage/ProdutosPage | Configuram CadastroPage compartilhada; lógica permanece em pages |
-| App apenas compondo páginas | Layout e página de confirmação; sem CRUD em App |
+| App apenas compondo páginas | AuthGate, confirmação de e-mail e redefinição de senha; sem CRUD em App |
 | Editar/Excluir e lista atualizada | Implementado; CRUD no navegador das três entidades já verificado nesta sessão |
 | Integração React → API → H2 e entidade própria em camadas | Verificado |
 | GitHub, commits regulares e link compartilhado | Aplicação publicada em main e quatro commits anteriores preservados. Compartilhamento com o professor e regularidade do histórico não comprovados |
 
 ## Limites e pendências
 
-1. Conta Brevo e remetente não configurados; entrega à caixa real não comprovada. Não enviar chaves no chat: usar scripts/Iniciar-Com-Email.ps1 após criar e verificar a conta.
+1. Conta Brevo e remetente verificados, SMTP configurado localmente; entrega à caixa real ainda aguarda comprovação. O script scripts/Iniciar-Com-Email.ps1 lê a configuração criptografada em .nexus/smtp.clixml, ignorada pelo Git. Credenciais devem ser fornecidas apenas localmente.
 2. Runtime JDK 21 não disponível nesta verificação. Compilação release 21 e execução JDK 22 passaram.
-3. Acesso sem login é deliberado para o escopo da N1. A confirmação de e-mail não autentica nem autoriza quem acessa o CRUD; CORS também não substitui autenticação. Não tratar esta entrega como pronta para exposição pública com dados reais.
+3. Login foi adicionado após o escopo original da N1. Todas as contas autenticadas e confirmadas possuem acesso ao CRUD; o cadastro Permissao ainda não implementa controle por perfil ou proprietário. Exposição pública exige HTTPS, cookie Secure e revisão de autorização.
 4. SMTP e banco não têm atomicidade conjunta nem fila de envio/retry persistente. Aceitação pelo servidor de e-mail não comprova entrega ao destinatário. Para operação pública, esses aspectos precisam ser evoluídos junto com autenticação e limitação de abuso.
 5. Consulta de vulnerabilidades foi feita no npm; não foi executado scanner de CVEs das dependências Maven, auditoria de infraestrutura ou pentest externo.
-6. A sintaxe do script foi validada; fluxo com credenciais reais não foi executado. A recuperação de lista após falha foi revisada em código, não testada por injeção de falha no navegador.
+6. Sintaxe do script validada e backend iniciado com as credenciais SMTP locais. A recuperação de lista após falha foi revisada em código, não testada por injeção de falha no navegador.
 
 Os testes demonstram os comportamentos cobertos; não constituem garantia de ausência de todos os defeitos. Dados do usuário foram preservados, e os registros descartáveis da auditoria foram excluídos.
+
+## Evolução de autenticação — 03/10/2026
+
+Tela inicial de login, cadastro com senha, confirmação obrigatória e recuperação foram adicionados por solicitação do autor. Sessão armazenada no servidor, cookie HttpOnly/SameSite=Lax, CSRF habilitado, rotação do identificador da sessão no login e expiração por inatividade de 30 minutos. Senha BCrypt com custo 12; versões de credencial invalidam sessões após recuperação e troca de endereço. Campos de senha, tokens, hashes e versão não são expostos nas respostas.
+
+Testes adicionais: bloqueio de GET/POST/PUT/DELETE anônimos nos três cadastros; login inválido ou sem confirmação; escrita sem CSRF; logout; invalidação de duas sessões após recuperação; senha antiga rejeitada; resposta genérica para endereço desconhecido; falha SMTP sem criar conta ou token; link expirado e usado; reenvio invalida o link anterior; duas redefinições concorrentes aceitam apenas uma. Os testes de fluxo usam EmailService substituído por mock; testes de protocolo SMTP cobrem as mensagens reais de confirmação e recuperação em servidor local isolado.
+
+Limites de requisições são locais ao processo: 10 tentativas de login por minuto por IP e 20 solicitações dos demais fluxos públicos de autenticação por minuto por IP. Não há proteção distribuída entre múltiplas instâncias. Não há usuário inicial ou senha padrão, nem conversão automática de senhas antigas em texto simples para credenciais utilizáveis.
+
+A conta Brevo e o remetente Nexus foram verificados. Credenciais foram salvas apenas em .nexus/smtp.clixml, criptografadas para o usuário Windows e ignoradas pelo Git. Backend foi iniciado com SMTP real. Nenhuma credencial foi colocada no repositório; recebimento em uma caixa externa ainda aguarda comprovação. A chave compartilhada no chat deve ser substituída pelo autor no provedor e reconfigurada localmente.

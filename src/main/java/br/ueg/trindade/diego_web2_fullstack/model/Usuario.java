@@ -31,6 +31,29 @@ public class Usuario {
     private java.time.Instant confirmacaoExpiraEm;
     @JsonIgnore
     private java.time.Instant confirmacaoEnviadaEm;
+    @JsonIgnore
+    private String recuperacaoHash;
+    @JsonIgnore
+    private java.time.Instant recuperacaoExpiraEm;
+    @JsonIgnore
+    private java.time.Instant recuperacaoEnviadaEm;
+    @JsonIgnore
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long versaoCredencial;
+
+    @JsonIgnore
+    public long getVersaoCredencial() { return versaoCredencial; }
+    public void setVersaoCredencial(long value) { versaoCredencial = value; }
+
+    @JsonIgnore
+    public String getRecuperacaoHash() { return recuperacaoHash; }
+    public void setRecuperacaoHash(String value) { recuperacaoHash = value; }
+    @JsonIgnore
+    public java.time.Instant getRecuperacaoExpiraEm() { return recuperacaoExpiraEm; }
+    public void setRecuperacaoExpiraEm(java.time.Instant value) { recuperacaoExpiraEm = value; }
+    @JsonIgnore
+    public java.time.Instant getRecuperacaoEnviadaEm() { return recuperacaoEnviadaEm; }
+    public void setRecuperacaoEnviadaEm(java.time.Instant value) { recuperacaoEnviadaEm = value; }
 
     public boolean isEmailConfirmado() { return emailConfirmado; }
     public void setEmailConfirmado(boolean value) { emailConfirmado = value; }

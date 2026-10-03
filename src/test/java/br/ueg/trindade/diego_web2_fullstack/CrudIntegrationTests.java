@@ -10,7 +10,15 @@ class CrudIntegrationTests {
     @org.springframework.beans.factory.annotation.Autowired
     br.ueg.trindade.diego_web2_fullstack.repository.UsuarioRepository usuarios;
     @Value("${local.server.port}") int port;
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client = HttpClient.newBuilder().cookieHandler(new java.net.CookieManager(null, java.net.CookiePolicy.ACCEPT_ALL)).build();
+    @org.junit.jupiter.api.BeforeEach void autenticar() throws Exception {
+        var conta = usuarios.findByEmailIgnoreCase("crud-session@example.com").orElse(null);
+        if (conta == null) {
+            conta = new br.ueg.trindade.diego_web2_fullstack.model.Usuario(null, "Sessão dos testes", "crud-session", new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(12).encode("Senha-segura-123"), "crud-session@example.com");
+            conta.setEmailConfirmado(true); usuarios.save(conta);
+        }
+        assertEquals(200, call("POST", "/api/auth/login", "{\"identificador\":\"crud-session\",\"senha\":\"Senha-segura-123\"}").statusCode());
+    }
     @Test void limitesDeEntradaETiposInvalidos() throws Exception {
         assertEquals(400, call("POST", "/api/produtos", "{\"nome\":\"Preço impreciso\",\"preco\":1.999}").statusCode());
         assertEquals(400, call("POST", "/api/produtos", "{\"nome\":\"Preço excessivo\",\"preco\":1000000000}").statusCode());
@@ -49,8 +57,11 @@ class CrudIntegrationTests {
         assertEquals(204, call("DELETE", path, null).statusCode());
     }
     private HttpResponse<String> call(String method, String path, String body) throws Exception {
+        var csrf = client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/auth/csrf")).GET().build(), HttpResponse.BodyHandlers.ofString());
+        String token = csrf.body().replaceAll("(?s).*\"token\":\"([^\"]+)\".*", "$1");
         return client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
             .header("Content-Type", "application/json")
+            .header("X-CSRF-TOKEN", token)
             .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
     }
     @Test void crudDasTresEntidades() throws Exception {

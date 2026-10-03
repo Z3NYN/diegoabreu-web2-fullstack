@@ -15,7 +15,9 @@ import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.*;
 
 class EmailSmtpTests {
-    @Test void mensagemEnviadaPorSmtpContemLinkEExpiracao() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void mensagemEnviadaPorSmtpContemLinkEExpiracao(boolean recuperacao) throws Exception {
         try (ServerSocket servidor = new ServerSocket(0, 1, java.net.InetAddress.getLoopbackAddress());
              ExecutorService executor = Executors.newSingleThreadExecutor()) {
             var recebimento = executor.submit(() -> {
@@ -44,12 +46,13 @@ class EmailSmtpTests {
             sender.getJavaMailProperties().setProperty("mail.smtp.timeout", "5000");
             var factory = new StaticListableBeanFactory(); factory.addBean("sender", sender);
             var service = new EmailService(factory.getBeanProvider(JavaMailSender.class), true, "nexus@example.com", "http://localhost:5173");
-            service.enviarConfirmacao("destino@example.com", "token-de-teste");
+            if (recuperacao) service.enviarRecuperacao("destino@example.com", "token-de-teste");
+            else service.enviarConfirmacao("destino@example.com", "token-de-teste");
             var mime = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(recebimento.get(10, TimeUnit.SECONDS).getBytes(StandardCharsets.UTF_8)));
-            assertEquals("Confirme seu e-mail | Nexus", mime.getSubject());
+            assertEquals(recuperacao ? "Recupere sua senha | Nexus" : "Confirme seu e-mail | Nexus", mime.getSubject());
             assertEquals("destino@example.com", mime.getAllRecipients()[0].toString());
-            assertTrue(mime.getContent().toString().contains("http://localhost:5173/?confirmar-email=token-de-teste"));
-            assertTrue(mime.getContent().toString().contains("24 horas"));
+            assertTrue(mime.getContent().toString().contains("http://localhost:5173/?" + (recuperacao ? "recuperar-senha" : "confirmar-email") + "=token-de-teste"));
+            assertTrue(mime.getContent().toString().contains(recuperacao ? "30 minutos" : "24 horas"));
         }
     }
 }

@@ -18,6 +18,8 @@ import static org.mockito.Mockito.*;
 @SpringBootTest(properties = {"spring.datasource.url=jdbc:h2:mem:emailtest", "spring.jpa.hibernate.ddl-auto=create-drop"})
 class EmailConfirmationTests {
     @Autowired UsuarioService service;
+    @Autowired br.ueg.trindade.diego_web2_fullstack.service.AuthService auth;
+    @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
     @Autowired UsuarioRepository repository;
     @MockitoBean EmailService email;
     @BeforeEach void preparar() { repository.deleteAll(); when(email.habilitado()).thenReturn(true); }
@@ -26,6 +28,34 @@ class EmailConfirmationTests {
         var token = ArgumentCaptor.forClass(String.class);
         verify(email, atLeastOnce()).enviarConfirmacao(anyString(), token.capture());
         return token.getValue();
+    }
+    private String tokenRecuperacao() {
+        var token = ArgumentCaptor.forClass(String.class);
+        verify(email, atLeastOnce()).enviarRecuperacao(anyString(), token.capture()); return token.getValue();
+    }
+    @Test void recuperacaoConcorrenteConsomeTokenSomenteUmaVez() throws Exception {
+        Usuario usuario = service.criar(dados("concorrente@example.com")); service.confirmar(tokenEnviado());
+        auth.solicitarRecuperacao(usuario.getEmail()); String token = tokenRecuperacao();
+        var inicio = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.Callable<Boolean> redefinir = () -> {
+            inicio.await();
+            try { auth.redefinirSenha(token, "Uma-frase-segura-123"); return true; }
+            catch (ResponseStatusException ex) { assertEquals(400, ex.getStatusCode().value()); return false; }
+        };
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var primeiro = executor.submit(redefinir); var segundo = executor.submit(redefinir); inicio.countDown();
+            assertNotEquals(primeiro.get(10, java.util.concurrent.TimeUnit.SECONDS), segundo.get(10, java.util.concurrent.TimeUnit.SECONDS));
+        }
+        usuario = repository.findById(usuario.getId()).orElseThrow();
+        assertEquals(1, usuario.getVersaoCredencial()); assertTrue(encoder.matches("Uma-frase-segura-123", usuario.getSenha()));
+    }
+    @Test void novoEnvioDeRecuperacaoInvalidaTokenAnterior() {
+        Usuario usuario = service.criar(dados("teste@example.com")); service.confirmar(tokenEnviado());
+        auth.solicitarRecuperacao(usuario.getEmail()); String primeiro = tokenRecuperacao();
+        usuario = repository.findById(usuario.getId()).orElseThrow(); usuario.setRecuperacaoEnviadaEm(Instant.now().minusSeconds(61)); repository.save(usuario);
+        auth.solicitarRecuperacao(usuario.getEmail()); String segundo = tokenRecuperacao(); assertNotEquals(primeiro, segundo);
+        assertEquals(400, assertThrows(ResponseStatusException.class, () -> auth.redefinirSenha(primeiro, "Uma-frase-segura-123")).getStatusCode().value());
+        auth.redefinirSenha(segundo, "Uma-frase-segura-123");
     }
     @Test void apenasUmaConfirmacaoSimultaneaPodeConsumirOToken() throws Exception {
         service.criar(dados("concorrente@example.com"));

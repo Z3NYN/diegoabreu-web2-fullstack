@@ -12,6 +12,9 @@ Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programaçã
 - Produtos com preço não negativo, até duas casas decimais e representação `BigDecimal` no backend.
 - Persistência em arquivo H2, mantendo os registros após reiniciar a aplicação.
 - Interface responsiva com identidade visual Nexus.
+- Login com e-mail ou username e senha, exigindo confirmação do e-mail antes de acessar os cadastros.
+- Sessão protegida por cookie HttpOnly, verificação no servidor e proteção CSRF nas operações de escrita.
+- Recuperação de senha por e-mail com link de uso único, validade de 30 minutos e encerramento das sessões anteriores.
 - Confirmação de e-mail por SMTP, quando configurado, com token de uso único e expiração em 24 horas.
 
 ## Tecnologias
@@ -77,16 +80,40 @@ flowchart LR
         pages["Páginas e componentes"] --> axios["Axios · services/api.ts"]
     end
     subgraph backend["Backend · Spring Boot"]
-        controllers["Controllers · /api"] --> services["Services · regras de negócio"]
+        security["Spring Security · sessão e CSRF"] --> controllers["Controllers · /api"]
+        controllers --> services["Services · regras de negócio"]
         services --> repositories["Repositories · Spring Data JPA"]
         services --> email["EmailService · envio opcional"]
     end
-    axios -->|"HTTP / JSON"| controllers
+    axios -->|"HTTP / JSON + cookie de sessão"| security
     repositories --> database[("H2 · arquivo local")]
     email -->|"SMTP / STARTTLS"| smtp["Provedor de e-mail"]
 ```
 
-Os controllers tratam as requisições e acessam apenas os services. Os services concentram as regras de negócio, e cada entidade possui um `JpaRepository`. No frontend, as páginas coordenam as operações e reutilizam componentes de formulário, listagem e item com dados recebidos por props.
+Spring Security exige autenticação para os cadastros e valida CSRF nas operações de escrita. Os controllers tratam as requisições e acessam apenas os services. Os services concentram as regras de negócio, e cada entidade possui um `JpaRepository`. No frontend, as páginas coordenam as operações e reutilizam componentes de formulário, listagem e item com dados recebidos por props.
+
+### Acesso à plataforma
+
+1. Configure o SMTP conforme a seção de e-mail abaixo. Sem configuração, cadastro de conta e recuperação retornam um erro explícito, sem simular entrega.
+2. Na tela inicial, selecione **Criar conta** e informe nome, username, e-mail e senha com pelo menos 12 caracteres (máximo de 72 bytes).
+3. Abra o link recebido e confirme o e-mail.
+4. Volte ao login e entre com seu e-mail ou username e senha.
+
+Os cadastros são acessíveis apenas após o login, inclusive quando alguém tenta chamar a API diretamente. A sessão expira após 30 minutos de inatividade; **Sair** a encerra no servidor. Senhas são armazenadas com BCrypt. Não há conta padrão nem senha de administrador incorporada ao projeto.
+
+Contas antigas sem senha ou com senha anterior em texto simples não permitem login. Para habilitá-las, use **Não recebi a confirmação** e, após confirmar o endereço, **Esqueci minha senha**. Os registros existentes são preservados.
+
+```mermaid
+flowchart TD
+    inicio["Abrir Nexus"] --> sessao{"Sessão válida?"}
+    sessao -->|"Sim"| plataforma["Cadastros protegidos"]
+    sessao -->|"Não"| login["Tela de login"]
+    login --> credenciais{"Senha correta e e-mail confirmado?"}
+    credenciais -->|"Sim"| plataforma
+    credenciais -->|"Não"| aviso["Orientar correção ou confirmação"]
+    plataforma --> sair["Sair ou sessão expirar"]
+    sair --> login
+```
 
 ```text
 src/
@@ -121,7 +148,7 @@ Os recursos disponíveis são `usuarios`, `permissoes` e `produtos`.
 | PUT | `/api/{recurso}/{id}` | Atualização — 200 |
 | DELETE | `/api/{recurso}/{id}` | Exclusão, sem corpo — 204 |
 
-Dados inválidos retornam 400; registros inexistentes, 404; conflitos de unicidade, 409. As mensagens de erro são devolvidas em JSON no campo `message`.
+Dados inválidos retornam 400; registros inexistentes, 404; conflitos de unicidade, 409. Sem sessão, os recursos protegidos retornam 401; falta de CSRF válido retorna 403. As mensagens de erro são devolvidas em JSON no campo `message`.
 
 Exemplos de corpo para cadastro:
 
@@ -143,7 +170,22 @@ Exemplos de corpo para cadastro:
 {"nome": "Teclado", "preco": 99.90}
 ```
 
-A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgnore`. O formulário da N1 utiliza nome, username e e-mail; este contrato não cadastra credenciais nem altera uma senha existente durante a edição.
+A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgnore`. O formulário de gestão utiliza nome, username e e-mail; este contrato preserva a senha existente durante a edição. A senha é definida pelo cadastro de conta ou pela recuperação, nunca pelos endpoints de edição do CRUD.
+
+### Autenticação e recuperação
+
+| Método | Endpoint | Finalidade |
+| --- | --- | --- |
+| GET | `/api/auth/csrf` | Obter token de segurança para uma operação de escrita |
+| POST | `/api/auth/registrar` | Criar conta com `nome`, `username`, `email` e `senha` |
+| POST | `/api/auth/login` | Entrar com `identificador` e `senha` |
+| GET | `/api/auth/me` | Consultar a conta da sessão autenticada |
+| POST | `/api/auth/logout` | Encerrar a sessão |
+| POST | `/api/auth/reenviar-confirmacao` | Solicitar confirmação com `email` |
+| POST | `/api/auth/recuperacao` | Solicitar recuperação com `email` |
+| POST | `/api/auth/redefinir-senha` | Definir senha com `token` e `senha` |
+
+As escritas exigem o token obtido de `/api/auth/csrf` no cabeçalho `X-CSRF-TOKEN` e os cookies da mesma sessão. O frontend faz isso automaticamente. Login e confirmação rotacionam ou consomem seus respectivos tokens; nenhum token de recuperação é retornado ao navegador pela solicitação de envio.
 
 ## Banco de dados
 
@@ -172,6 +214,10 @@ erDiagram
         String confirmacaoHash "Interno; SHA-256"
         Instant confirmacaoExpiraEm "Interno"
         Instant confirmacaoEnviadaEm "Interno"
+        String recuperacaoHash "Interno; SHA-256"
+        Instant recuperacaoExpiraEm "Interno"
+        Instant recuperacaoEnviadaEm "Interno"
+        long versaoCredencial "Interno; invalidação de sessões"
     }
     Permissao {
         Long id PK
@@ -239,7 +285,15 @@ sequenceDiagram
 .\scripts\Iniciar-Com-Email.ps1
 ```
 
-O script solicita a chave de forma oculta e configura o backend apenas no processo atual, usando SMTP com STARTTLS. Mantenha o frontend em outro terminal. Não coloque credenciais no código, no frontend ou no Git.
+Na primeira execução, o script solicita a chave de forma oculta e salva a configuração em `.nexus/smtp.clixml`, fora do Git. A chave é criptografada pelo Windows para o usuário que a salvou (DPAPI); não é portável para outra conta ou computador. O backend utiliza SMTP com STARTTLS, e as variáveis de ambiente alteradas são restauradas ao encerrar. Mantenha o frontend em outro terminal. Não coloque credenciais no código, no frontend ou no Git.
+
+Para salvar os dados antes de iniciar o backend:
+
+```powershell
+.\scripts\Iniciar-Com-Email.ps1 -Configurar -SomenteConfigurar
+```
+
+Nas próximas execuções, use o script sem parâmetros. Para substituir as credenciais, use `-Configurar`.
 
 Outros provedores podem ser configurados com estas variáveis de ambiente:
 
@@ -253,6 +307,34 @@ Outros provedores podem ser configurados com estas variáveis de ambiente:
 | `NEXUS_FRONTEND_URL` | Endereço para o link; padrão `http://localhost:5173` |
 
 O endereço `localhost` funciona apenas no computador em que a aplicação está rodando. Aceitação pelo SMTP não garante chegada à caixa de entrada. O envio local pelo protocolo foi testado; **a entrega por um provedor externo ainda depende da configuração e de uma verificação real**.
+
+### Recuperação de senha
+
+Em **Esqueci minha senha**, informe o e-mail confirmado da conta. O link enviado abre uma tela para definir e repetir a nova senha. O token é aleatório, armazenado como hash e expira em 30 minutos. Um novo envio invalida o link anterior; após a troca de senha, o token é consumido e as sessões anteriores deixam de permitir acesso.
+
+Solicitações para endereços inexistentes ou ainda não confirmados recebem a mesma resposta genérica, sem divulgar quais contas existem. O envio tem intervalo mínimo de 60 segundos por conta; login é limitado a 10 tentativas por minuto por IP, e os fluxos de cadastro/recuperação/reenvio/redefinição compartilham um limite de 20 solicitações por minuto por IP. Esses limites são locais ao processo e reiniciam com o servidor.
+
+```mermaid
+sequenceDiagram
+    actor Pessoa
+    participant UI as Nexus
+    participant API as AuthService
+    participant DB as H2
+    participant SMTP as Provedor SMTP
+    Pessoa->>UI: Esqueci minha senha
+    UI->>API: Solicitar recuperação por e-mail
+    API->>DB: Buscar conta confirmada e registrar hash do token
+    API->>SMTP: Enviar link com validade de 30 minutos
+    SMTP-->>API: Aceitar mensagem para envio
+    API-->>UI: Resposta genérica de solicitação
+    Note over Pessoa,SMTP: Recebimento depende do provedor externo
+    Pessoa->>UI: Abrir link e informar nova senha
+    UI->>API: Token e nova senha
+    API->>DB: Bloquear registro e validar hash e validade
+    API->>DB: Salvar BCrypt, consumir token e incrementar versão da credencial
+    API-->>UI: Senha atualizada
+    Pessoa->>UI: Entrar com a nova senha
+```
 
 Referência: [documentação SMTP da Brevo](https://help.brevo.com/hc/en-us/articles/7924908994450-Send-transactional-emails-using-Brevo-SMTP).
 
@@ -272,7 +354,7 @@ npm run build
 npm run lint
 ```
 
-Na auditoria de **03/10/2026**, os **12 testes** passaram, assim como a compilação e o lint do frontend. Os testes cobrem CRUD, regras de negócio, respostas de erro, dados sensíveis ocultos e confirmação de e-mail, incluindo expiração, uso único, concorrência e falha SMTP. A persistência em arquivo e o CRUD das três entidades também foram verificados com a aplicação em execução.
+Na verificação de **03/10/2026**, os **20 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste; entrega externa continua pendente. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
 
 O projeto compila para Java 21. A execução disponível nesta auditoria utilizou JDK 22; a execução especificamente no JDK 21 ainda precisa ser confirmada.
 
@@ -280,7 +362,9 @@ O projeto compila para Java 21. A execução disponível nesta auditoria utilizo
 
 Esta entrega atende ao escopo técnico da N1: aplicação em camadas, entidade própria `Produto` e integração React → API → H2. A confirmação de e-mail é uma evolução adicional solicitada para a Nexus.
 
-O CRUD local não exige login. Spring Security e CORS estão configurados para a execução acadêmica, com backend limitado a `127.0.0.1` por padrão. JWT, upload, deploy e relacionamentos adicionais ficam fora deste escopo. A confirmação de e-mail não substitui autenticação ou autorização.
+Login obrigatório, confirmação e recuperação de senha foram adicionados a pedido do autor após o escopo original da N1. A autenticação utiliza sessão no servidor, sem JWT. Todas as contas autenticadas e confirmadas podem acessar os três cadastros; o cadastro de permissões ainda não implementa perfis de autorização.
+
+O backend permanece limitado a `127.0.0.1` por padrão. Para exposição pública, são necessários HTTPS, `SESSION_COOKIE_SECURE=true`, configuração adequada de origem/CORS e avaliação dos controles de autorização. SMTP e banco não possuem fila transacional conjunta. Upload, deploy e relacionamentos adicionais ficam fora desta entrega.
 
 Consulte o [checklist da avaliação](CHECKLIST-N1.md) e o [relatório de auditoria](AUDITORIA.md) para as evidências e pendências. O compartilhamento do link com o professor e a avaliação do histórico de commits fazem parte da entrega acadêmica.
 

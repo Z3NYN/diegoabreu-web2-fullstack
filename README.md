@@ -71,8 +71,19 @@ O frontend utiliza a porta 5173 fixa. Se ela estiver ocupada, encerre a instânc
 
 ## Arquitetura
 
-```text
-React → Controller → Service → Repository → H2
+```mermaid
+flowchart LR
+    subgraph frontend["Frontend · React e TypeScript"]
+        pages["Páginas e componentes"] --> axios["Axios · services/api.ts"]
+    end
+    subgraph backend["Backend · Spring Boot"]
+        controllers["Controllers · /api"] --> services["Services · regras de negócio"]
+        services --> repositories["Repositories · Spring Data JPA"]
+        services --> email["EmailService · envio opcional"]
+    end
+    axios -->|"HTTP / JSON"| controllers
+    repositories --> database[("H2 · arquivo local")]
+    email -->|"SMTP / STARTTLS"| smtp["Provedor de e-mail"]
 ```
 
 Os controllers tratam as requisições e acessam apenas os services. Os services concentram as regras de negócio, e cada entidade possui um `JpaRepository`. No frontend, as páginas coordenam as operações e reutilizam componentes de formulário, listagem e item com dados recebidos por props.
@@ -145,11 +156,73 @@ spring.jpa.hibernate.ddl-auto=update
 
 Execute o backend sempre pela raiz do projeto para utilizar o mesmo arquivo `data/database.mv.db`. Esse banco e os artefatos de compilação ficam fora do Git. Os testes utilizam bancos em memória isolados. O console H2 permanece desativado.
 
+### Modelo de dados
+
+As três entidades possuem identificador gerado automaticamente. Neste escopo, os cadastros são independentes, sem relacionamentos JPA entre si. `Permissao` representa um cadastro acadêmico; não determina o acesso ao CRUD.
+
+```mermaid
+erDiagram
+    Usuario {
+        Long id PK
+        String nome
+        String username UK
+        String senha "Oculta na API"
+        String email UK
+        boolean emailConfirmado
+        String confirmacaoHash "Interno; SHA-256"
+        Instant confirmacaoExpiraEm "Interno"
+        Instant confirmacaoEnviadaEm "Interno"
+    }
+    Permissao {
+        Long id PK
+        String nome
+        String descricao
+    }
+    Produto {
+        Long id PK
+        String nome
+        BigDecimal preco "Até duas casas decimais"
+    }
+```
+
+`PK` identifica a chave primária e `UK`, os campos únicos. O diagrama mostra os atributos persistidos; `statusEmail` é calculado a partir do estado de confirmação.
+
 ## Confirmação de e-mail
 
 Esta funcionalidade adicional requer uma conta SMTP e um remetente verificado. Por padrão, o envio está desativado, e o usuário aparece como **pendente de envio**. A aplicação não simula uma confirmação entregue.
 
 Quando habilitado, o cadastro ou a troca de endereço envia um link. O token é armazenado apenas como hash, expira em 24 horas e é invalidado após uso ou reenvio. O intervalo mínimo entre reenvios é de 60 segundos. A página solicita um clique explícito para confirmar o endereço.
+
+### Fluxo de confirmação
+
+O diagrama representa o caminho bem-sucedido com SMTP habilitado. A chegada da mensagem depende do provedor e da caixa de entrada do destinatário.
+
+```mermaid
+sequenceDiagram
+    actor Pessoa
+    participant UI as Nexus · React
+    participant API as API · UsuarioService
+    participant DB as H2
+    participant SMTP as Provedor SMTP
+
+    Pessoa->>UI: Cadastrar usuário com e-mail
+    UI->>API: POST /api/usuarios
+    API->>API: Validar dados e gerar token
+    API->>DB: Gravar usuário, hash e validade na transação
+    API->>SMTP: Enviar link com o token
+    SMTP-->>API: Aceitar mensagem para envio
+    API->>DB: Concluir transação
+    API-->>UI: 201 · Aguardando confirmação
+    Note over SMTP,Pessoa: Entrega ao destinatário depende do provedor
+    Pessoa->>UI: Abrir link e clicar em confirmar
+    UI->>API: POST /api/usuarios/confirmar-email
+    API->>DB: Buscar hash com bloqueio de atualização
+    DB-->>API: Usuário e validade do token
+    API->>API: Validar token e expiração
+    API->>DB: Confirmar e-mail e invalidar token
+    API-->>UI: 204 · Confirmação concluída
+    UI-->>Pessoa: Exibir confirmação
+```
 
 | Método | Endpoint | Ação |
 | --- | --- | --- |

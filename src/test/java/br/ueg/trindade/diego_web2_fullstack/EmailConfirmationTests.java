@@ -33,6 +33,17 @@ class EmailConfirmationTests {
         var token = ArgumentCaptor.forClass(String.class);
         verify(email, atLeastOnce()).enviarRecuperacao(anyString(), token.capture()); return token.getValue();
     }
+    @Test void corrigirEmailPendenteExigeSenhaEInvalidaLinkAnterior() {
+        Usuario usuario = auth.registrar("Teste", "teste", "errado@gmai.com", "Uma-frase-segura-123");
+        String anterior = tokenEnviado(); String hashSenha = usuario.getSenha();
+        assertEquals(401, assertThrows(ResponseStatusException.class, () -> auth.corrigirEmail("teste", "senha-errada", "correto@gmail.com")).getStatusCode().value());
+        auth.corrigirEmail("teste", "Uma-frase-segura-123", "correto@gmail.com");
+        String novo = tokenEnviado(); assertNotEquals(anterior, novo);
+        usuario = repository.findById(usuario.getId()).orElseThrow();
+        assertEquals("correto@gmail.com", usuario.getEmail()); assertEquals(hashSenha, usuario.getSenha()); assertFalse(usuario.isEmailConfirmado());
+        assertThrows(ResponseStatusException.class, () -> service.confirmar(anterior)); service.confirmar(novo);
+        assertEquals(409, assertThrows(ResponseStatusException.class, () -> auth.corrigirEmail("teste", "Uma-frase-segura-123", "outro@gmail.com")).getStatusCode().value());
+    }
     @Test void recuperacaoConcorrenteConsomeTokenSomenteUmaVez() throws Exception {
         Usuario usuario = service.criar(dados("concorrente@example.com")); service.confirmar(tokenEnviado());
         auth.solicitarRecuperacao(usuario.getEmail()); String token = tokenRecuperacao();

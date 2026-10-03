@@ -43,7 +43,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/auth/csrf").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/login", "/api/auth/registrar", "/api/auth/recuperacao", "/api/auth/redefinir-senha", "/api/auth/reenviar-confirmacao", "/api/usuarios/confirmar-email").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/login", "/api/auth/registrar", "/api/auth/recuperacao", "/api/auth/redefinir-senha", "/api/auth/reenviar-confirmacao", "/api/auth/corrigir-email", "/api/usuarios/confirmar-email").permitAll()
                 .requestMatchers("/api/**").authenticated().anyRequest().denyAll())
             .addFilterBefore(new SessaoValidaFilter(usuarios), AuthorizationFilter.class)
             .build();

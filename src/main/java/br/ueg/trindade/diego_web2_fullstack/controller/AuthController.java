@@ -29,6 +29,7 @@ public class AuthController {
     public record Cadastro(String nome, String username, String email, String senha) {}
     public record Endereco(String email) {}
     public record Recuperacao(String token, String senha) {}
+    public record Correcao(String identificador, String senha, String email) {}
     @GetMapping("/csrf") public Map<String, String> csrf(CsrfToken token) { return Map.of("token", token.getToken()); }
     @GetMapping("/me") public Usuario me(Authentication auth) { return service.buscarSessao(auth.getName()); }
     @PostMapping("/registrar") @ResponseStatus(HttpStatus.CREATED)
@@ -69,6 +70,10 @@ public class AuthController {
     @PostMapping("/redefinir-senha") @ResponseStatus(HttpStatus.NO_CONTENT)
     public void redefinir(@RequestBody Recuperacao recuperacao, HttpServletRequest request) {
         limitar(request, "email", 20); service.redefinirSenha(recuperacao.token(), recuperacao.senha());
+    }
+    @PostMapping("/corrigir-email") public Map<String, String> corrigir(@RequestBody Correcao correcao, HttpServletRequest request) {
+        limitar(request, "login", 10); service.corrigirEmail(correcao.identificador(), correcao.senha(), correcao.email());
+        return Map.of("message", "E-mail corrigido. Enviamos um novo link para o endereço informado; o link anterior foi invalidado.");
     }
     private synchronized void limitar(HttpServletRequest request, String fluxo, int limite) {
         long agora = System.currentTimeMillis();

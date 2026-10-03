@@ -115,4 +115,14 @@ class AuthIntegrationTests {
         assertEquals(200,call(client,"PUT","/api/usuarios/"+usuario.getId(),"{\"nome\":\"Conta\",\"username\":\"conta\",\"email\":\"novo@example.com\"}",true).statusCode());
         assertEquals(401,call(client,"GET","/api/produtos",null,false).statusCode());
     }
+    @Test void correcaoPublicaDeEmailPendenteRequerSenhaECsrfSemLiberarSessao() throws Exception {
+        assertEquals(201,post("/api/auth/registrar","{\"nome\":\"Conta\",\"username\":\"conta\",\"email\":\"conta@example.com\",\"senha\":\""+SENHA+"\"}").statusCode());
+        String correto = "{\"identificador\":\"conta\",\"senha\":\""+SENHA+"\",\"email\":\"novo@example.com\"}";
+        assertEquals(403,call(client,"POST","/api/auth/corrigir-email",correto,false).statusCode());
+        assertEquals(401,post("/api/auth/corrigir-email",correto.replace(SENHA,"senha-errada")).statusCode());
+        assertEquals(200,post("/api/auth/corrigir-email",correto).statusCode());
+        verify(email).enviarConfirmacao(eq("novo@example.com"),anyString());
+        assertFalse(usuarios.findByEmailIgnoreCase("novo@example.com").orElseThrow().isEmailConfirmado());
+        assertEquals(401,call(client,"GET","/api/produtos",null,false).statusCode());
+    }
 }

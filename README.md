@@ -103,6 +103,8 @@ Os cadastros são acessíveis apenas após o login, inclusive quando alguém ten
 
 Contas antigas sem senha ou com senha anterior em texto simples não permitem login. Para habilitá-las, use **Não recebi a confirmação** e, após confirmar o endereço, **Esqueci minha senha**. Os registros existentes são preservados.
 
+Se o endereço foi digitado errado no cadastro, use **Errei meu e-mail no cadastro**. Informe o username ou endereço anterior, a senha cadastrada e o e-mail correto. Essa opção atende contas ainda não confirmadas: preserva a senha, invalida o link anterior e envia uma nova confirmação. O formulário também sugere conferir domínios com erros comuns de digitação, sem alterar o endereço automaticamente.
+
 ```mermaid
 flowchart TD
     inicio["Abrir Nexus"] --> sessao{"Sessão válida?"}
@@ -182,6 +184,7 @@ A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgn
 | GET | `/api/auth/me` | Consultar a conta da sessão autenticada |
 | POST | `/api/auth/logout` | Encerrar a sessão |
 | POST | `/api/auth/reenviar-confirmacao` | Solicitar confirmação com `email` |
+| POST | `/api/auth/corrigir-email` | Corrigir conta pendente com `identificador`, `senha` e `email` |
 | POST | `/api/auth/recuperacao` | Solicitar recuperação com `email` |
 | POST | `/api/auth/redefinir-senha` | Definir senha com `token` e `senha` |
 
@@ -306,7 +309,7 @@ Outros provedores podem ser configurados com estas variáveis de ambiente:
 | `SMTP_AUTH` / `SMTP_STARTTLS` | Autenticação e TLS; padrão `true` |
 | `NEXUS_FRONTEND_URL` | Endereço para o link; padrão `http://localhost:5173` |
 
-O endereço `localhost` funciona apenas no computador em que a aplicação está rodando. Aceitação pelo SMTP não garante chegada à caixa de entrada. O envio local pelo protocolo foi testado; **a entrega por um provedor externo ainda depende da configuração e de uma verificação real**.
+O endereço `localhost` funciona apenas no computador em que a aplicação está rodando. Aceitação pelo SMTP não garante chegada à caixa de entrada. O protocolo foi testado localmente e a confirmação pela Brevo foi recebida e concluída pelo autor. Cada instalação precisa configurar suas próprias credenciais; recebimento do link de recuperação na caixa pessoal não foi verificado.
 
 ### Recuperação de senha
 
@@ -354,7 +357,7 @@ npm run build
 npm run lint
 ```
 
-Na verificação de **03/10/2026**, os **20 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste; entrega externa continua pendente. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
+Na verificação de **03/10/2026**, os **22 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação, além da correção de e-mail condicionada à senha. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste. O SMTP externo da Brevo também foi configurado e testado; o autor confirmou o recebimento da confirmação e a ativação da conta. O recebimento do link de recuperação na caixa pessoal não foi verificado, embora o fluxo tenha testes HTTP e SMTP aprovados. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
 
 O projeto compila para Java 21. A execução disponível nesta auditoria utilizou JDK 22; a execução especificamente no JDK 21 ainda precisa ser confirmada.
 

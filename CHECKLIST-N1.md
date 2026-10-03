@@ -24,7 +24,7 @@ Referência: Avaliação N1 — Checklist e Aulas 01 a 06. Verificado em 03/10/2
 
 ## Evidências de execução
 
-- Maven package: JAR gerado; 20 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
+- Maven package: JAR gerado; 22 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
 - npm ci concluído; compilação TypeScript/Vite e lint sem avisos.
 - CRUD manual no navegador das três entidades.
 - Erro do service apresentado no frontend e persistência após reinício. Layout inspecionado em desktop e viewport de 390 × 844.
@@ -37,9 +37,9 @@ O repositório, seu histórico e a publicação da aplicação foram verificados
 
 Marca Nexus e logo no cabeçalho e favicon. Validação do e-mail no servidor e frontend, bloqueio de duplicidade e confirmação por link SMTP com token de uso único, expiração de 24h, reenvio com intervalo e invalidação quando o endereço muda. Campos internos não são expostos ao cliente.
 
-O envio a uma caixa real depende da configuração de conta/remetente/chave SMTP. Essa etapa permanece pendente; não foi marcada como concluída por testes locais ou pela aceitação no protocolo SMTP. Instruções e script de configuração no README.
+SMTP externo configurado localmente com remetente verificado. O autor confirmou o recebimento da mensagem e a ativação da conta; instruções e script de configuração no README.
 
-Validação adicional: envio pelo protocolo SMTP a um servidor local de teste aprovado. Entrega externa Brevo pendente de criação da conta e configuração das credenciais.
+Validação adicional: envio pelo protocolo SMTP a um servidor local de teste aprovado. Entrega externa de confirmação pela Brevo também comprovada pelo autor.
 
 Auditoria ampliada registrada em AUDITORIA.md: correções de validação, erros HTTP, interface, script SMTP e isolamento local. A consulta anterior ao npm não apontou vulnerabilidades conhecidas.
 
@@ -51,5 +51,6 @@ Auditoria ampliada registrada em AUDITORIA.md: correções de validação, erros
 - Recuperação por SMTP com token aleatório de uso único, hash no banco, validade de 30 minutos e reenvio com invalidação do link anterior.
 - Redefinição da senha, troca de e-mail e exclusão da conta invalidam o acesso das sessões anteriores.
 - Testes HTTP e de concorrência aprovados; confirmação e recuperação enviadas a servidor SMTP local de teste.
+- Correção de endereço para conta ainda não confirmada exige a senha existente, preserva a credencial e invalida o link anterior. Formulário sugere conferir domínios com erros comuns.
 
-Conta Brevo e remetente Nexus verificados com o endereço autorizado pelo autor. SMTP configurado localmente; chave protegida pelo Windows em .nexus/smtp.clixml, fora do Git. Entrega a caixa real ainda aguarda verificação do cadastro e da recuperação pela conta do autor.
+Conta Brevo e remetente Nexus verificados com o endereço autorizado pelo autor. SMTP configurado localmente; chave protegida pelo Windows em .nexus/smtp.clixml, fora do Git. E-mail de teste registrado como entregue e aberto no provedor. Após corrigir o endereço digitado incorretamente, o autor confirmou o recebimento da mensagem e a ativação da conta. O recebimento externo da recuperação ainda não foi verificado.

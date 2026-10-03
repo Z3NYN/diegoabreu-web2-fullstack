@@ -4,7 +4,7 @@
 
 Os requisitos técnicos funcionais da N1 estão implementados e as verificações abaixo passaram. A aplicação foi publicada no [repositório GitHub](https://github.com/Z3NYN/diegoabreu-web2-fullstack), preservando os quatro commits anteriores. Compartilhamento com o professor e avaliação da regularidade do histórico continuam pendentes. Java 21 é o alvo de compilação, mas a execução foi verificada no JDK 22 disponível.
 
-A confirmação e a recuperação de senha têm implementação SMTP e testes de protocolo. Conta Brevo e remetente foram verificados, e as credenciais foram configuradas localmente com proteção do Windows. A chegada a uma caixa real **ainda aguarda verificação**. A aplicação não apresenta envio falso quando SMTP está desativado.
+A confirmação e a recuperação de senha têm implementação SMTP e testes de protocolo. Conta Brevo e remetente foram verificados, e as credenciais foram configuradas localmente com proteção do Windows. O autor confirmou o recebimento da mensagem e a confirmação da conta em uma caixa real. A aplicação não apresenta envio falso quando SMTP está desativado.
 
 ## Achados e correções
 
@@ -22,7 +22,7 @@ A confirmação e a recuperação de senha têm implementação SMTP e testes de
 
 ## Verificações executadas nesta auditoria
 
-- Maven package: **20 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
+- Maven package: **22 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
 - CRUD das três entidades, GET por id, atualização do registro existente, exclusão e erros 404: testes HTTP reais com servidor Spring e H2 em memória.
 - Entrada JSON inválida, id não numérico, caminho inexistente, limites de nome/descrição/preço: testes HTTP.
 - Senha e hash interno ocultos; tentativa de enviar emailConfirmado=true pelo cliente não confirma o e-mail; senha existente preservada no PUT: testes HTTP e banco.
@@ -58,7 +58,7 @@ A confirmação e a recuperação de senha têm implementação SMTP e testes de
 
 ## Limites e pendências
 
-1. Conta Brevo e remetente verificados, SMTP configurado localmente; entrega à caixa real ainda aguarda comprovação. O script scripts/Iniciar-Com-Email.ps1 lê a configuração criptografada em .nexus/smtp.clixml, ignorada pelo Git. Credenciais devem ser fornecidas apenas localmente.
+1. Conta Brevo e remetente verificados, SMTP configurado localmente; recebimento da confirmação comprovado pelo autor. O script scripts/Iniciar-Com-Email.ps1 lê a configuração criptografada em .nexus/smtp.clixml, ignorada pelo Git. Credenciais devem ser fornecidas apenas localmente.
 2. Runtime JDK 21 não disponível nesta verificação. Compilação release 21 e execução JDK 22 passaram.
 3. Login foi adicionado após o escopo original da N1. Todas as contas autenticadas e confirmadas possuem acesso ao CRUD; o cadastro Permissao ainda não implementa controle por perfil ou proprietário. Exposição pública exige HTTPS, cookie Secure e revisão de autorização.
 4. SMTP e banco não têm atomicidade conjunta nem fila de envio/retry persistente. Aceitação pelo servidor de e-mail não comprova entrega ao destinatário. Para operação pública, esses aspectos precisam ser evoluídos junto com autenticação e limitação de abuso.
@@ -75,4 +75,16 @@ Testes adicionais: bloqueio de GET/POST/PUT/DELETE anônimos nos três cadastros
 
 Limites de requisições são locais ao processo: 10 tentativas de login por minuto por IP e 20 solicitações dos demais fluxos públicos de autenticação por minuto por IP. Não há proteção distribuída entre múltiplas instâncias. Não há usuário inicial ou senha padrão, nem conversão automática de senhas antigas em texto simples para credenciais utilizáveis.
 
-A conta Brevo e o remetente Nexus foram verificados. Credenciais foram salvas apenas em .nexus/smtp.clixml, criptografadas para o usuário Windows e ignoradas pelo Git. Backend foi iniciado com SMTP real. Nenhuma credencial foi colocada no repositório; recebimento em uma caixa externa ainda aguarda comprovação. A chave compartilhada no chat deve ser substituída pelo autor no provedor e reconfigurada localmente.
+A conta Brevo e o remetente Nexus foram verificados. Credenciais foram salvas apenas em .nexus/smtp.clixml, criptografadas para o usuário Windows e ignoradas pelo Git. Backend foi iniciado com SMTP real. Nenhuma credencial foi colocada no repositório; o autor confirmou o recebimento externo e a ativação da conta. A chave compartilhada no chat deve ser substituída pelo autor no provedor e reconfigurada localmente.
+
+## Diagnóstico de entrega e correção de endereço
+
+O provedor registrou o e-mail de teste como entregue e aberto. A confirmação inicial foi enviada ao endereço digitado pelo usuário, que continha um erro no domínio; o provedor também registrou entrega nesse destinatário. Isso não comprova recebimento pela pessoa que fez o cadastro.
+
+Foi adicionada a opção de corrigir o endereço de uma conta ainda não confirmada mediante a senha cadastrada, com CSRF e limite de tentativas. A senha permanece intacta; o link anterior é invalidado e uma nova confirmação é enviada. Dois testes adicionais verificam exigência de senha, CSRF, preservação da credencial, invalidação do link anterior e ausência de sessão autenticada antes de confirmar.
+
+O formulário sugere conferir alguns domínios frequentemente digitados incorretamente, sem substituir automaticamente o endereço. A confirmação do e-mail continua sendo a prova de acesso à caixa postal. O autor confirmou que recebeu a nova mensagem e confirmou sua conta. A recuperação possui testes HTTP e SMTP aprovados; o recebimento desse segundo fluxo na caixa pessoal não foi verificado.
+
+## Refinamento da experiência
+
+Interface refinada com identidade Nexus, formulários e mensagens mais legíveis, navegação responsiva, busca local nos três cadastros, foco no formulário durante a edição e opção de mostrar/ocultar a senha. Ajuda de confirmação agrupada para reduzir distrações na entrada. A busca filtra os registros carregados; não substitui paginação no servidor.

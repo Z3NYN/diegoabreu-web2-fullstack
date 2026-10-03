@@ -32,6 +32,11 @@ public class AuthService {
         return usuarios.criar(new Usuario(null, nome, username, encoder.encode(senha), endereco));
     }
     public Usuario autenticar(String identificador, String senha) {
+        Usuario usuario = validarCredenciais(identificador, senha);
+        if (!usuario.isEmailConfirmado()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Confirme seu e-mail antes de entrar. Você pode solicitar um novo link ou corrigir o endereço.");
+        return usuario;
+    }
+    private Usuario validarCredenciais(String identificador, String senha) {
         String login = identificador == null ? "" : identificador.trim().toLowerCase(Locale.ROOT);
         if (login.length() > 254 || senha == null || senha.getBytes(StandardCharsets.UTF_8).length > 72)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail, username ou senha incorretos.");
@@ -39,8 +44,15 @@ public class AuthService {
         String hash = usuario == null || usuario.getSenha() == null || !usuario.getSenha().startsWith("$2") ? hashInexistente : usuario.getSenha();
         if (!encoder.matches(senha, hash) || usuario == null || hash.equals(hashInexistente))
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "E-mail, username ou senha incorretos.");
-        if (!usuario.isEmailConfirmado()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Confirme seu e-mail antes de entrar. Você pode solicitar um novo link.");
         return usuario;
+    }
+    public void corrigirEmail(String identificador, String senha, String novoEmail) {
+        Usuario usuario = validarCredenciais(identificador, senha);
+        if (usuario.isEmailConfirmado()) throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta conta já está confirmada. Entre para alterar seus dados.");
+        email.exigirConfiguracao();
+        String endereco = normalizarEmail(novoEmail);
+        if (endereco.equals(usuario.getEmail())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O endereço já corresponde ao cadastro. Use Reenviar confirmação.");
+        usuarios.atualizar(usuario.getId(), new Usuario(null, usuario.getNome(), usuario.getUsername(), null, endereco));
     }
     public void solicitarRecuperacao(String endereco) {
         email.exigirConfiguracao();

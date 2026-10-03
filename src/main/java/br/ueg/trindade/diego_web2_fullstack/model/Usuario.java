@@ -2,16 +2,49 @@ package br.ueg.trindade.diego_web2_fullstack.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import jakarta.persistence.*;
+
+@Entity
 public class Usuario {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
+    @Column(unique = true)
     private String username;
 
     @JsonIgnore
     private String senha;
 
+    @jakarta.validation.constraints.NotBlank
+    @jakarta.validation.constraints.Email
+    @jakarta.validation.constraints.Size(max = 254)
+    @jakarta.validation.constraints.Pattern(regexp = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$")
+    @Column(unique = true)
     private String email;
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    private boolean emailConfirmado;
+    @JsonIgnore
+    private String confirmacaoHash;
+    @JsonIgnore
+    private java.time.Instant confirmacaoExpiraEm;
+    @JsonIgnore
+    private java.time.Instant confirmacaoEnviadaEm;
+
+    public boolean isEmailConfirmado() { return emailConfirmado; }
+    public void setEmailConfirmado(boolean value) { emailConfirmado = value; }
+    @JsonIgnore
+    public String getConfirmacaoHash() { return confirmacaoHash; }
+    public void setConfirmacaoHash(String value) { confirmacaoHash = value; }
+    @JsonIgnore
+    public java.time.Instant getConfirmacaoExpiraEm() { return confirmacaoExpiraEm; }
+    public void setConfirmacaoExpiraEm(java.time.Instant value) { confirmacaoExpiraEm = value; }
+    @JsonIgnore
+    public java.time.Instant getConfirmacaoEnviadaEm() { return confirmacaoEnviadaEm; }
+    public void setConfirmacaoEnviadaEm(java.time.Instant value) { confirmacaoEnviadaEm = value; }
+    public String getStatusEmail() { return emailConfirmado ? "CONFIRMADO" : confirmacaoEnviadaEm == null ? "PENDENTE_ENVIO" : "AGUARDANDO_CONFIRMACAO"; }
+
 
     public Usuario() {
     }

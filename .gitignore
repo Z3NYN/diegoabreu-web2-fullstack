@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Dados e artefatos locais
+/data/
+**/node_modules/
+**/dist/
+*.tsbuildinfo
+*.mv.db
+*.trace.db
+.env
+.env.local
+.env.*
+!**/.env.example

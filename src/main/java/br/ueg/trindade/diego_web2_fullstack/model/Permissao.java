@@ -1,7 +1,12 @@
 package br.ueg.trindade.diego_web2_fullstack.model;
 
+import jakarta.persistence.*;
+
+@Entity
 public class Permissao {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
     private String descricao;

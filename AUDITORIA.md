@@ -22,7 +22,7 @@ A confirmação e a recuperação de senha têm implementação SMTP e testes de
 
 ## Verificações executadas nesta auditoria
 
-- Maven package: **22 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
+- Maven package: **31 testes, zero falhas e zero erros**, JAR atualizado. Relatórios em target/surefire-reports.
 - CRUD das três entidades, GET por id, atualização do registro existente, exclusão e erros 404: testes HTTP reais com servidor Spring e H2 em memória.
 - Entrada JSON inválida, id não numérico, caminho inexistente, limites de nome/descrição/preço: testes HTTP.
 - Senha e hash interno ocultos; tentativa de enviar emailConfirmado=true pelo cliente não confirma o e-mail; senha existente preservada no PUT: testes HTTP e banco.
@@ -94,3 +94,15 @@ Interface refinada com identidade Nexus, formulários e mensagens mais legíveis
 A listagem passou a ocupar o espaço principal. O botão Novo cadastro abre o formulário com foco no primeiro campo; salvar fecha o formulário e atualiza os registros. Busca, ordenação por nome ou identificador mais recente, estados de lista vazia e carregamento facilitam a consulta. A exclusão utiliza um diálogo modal com nome do registro, aviso de irreversibilidade e foco inicial na ação de manter o registro. Interface de entrada e estilos foram consolidados para manter consistência entre celular e desktop.
 
 Verificação no navegador: navegação entre cadastros, abertura/cancelamento do formulário, busca sem resultados e cancelamento da exclusão. Nenhum registro real foi removido durante essa revisão. Compilação TypeScript/Vite e lint aprovados; backend preservado nesta alteração.
+
+## Funcionalidade própria: controle de estoque
+
+Material acadêmico conferido: checklist N1, página 1, solicita funcionalidades próprias com entidade de interesse; Aula 06, página 21, pede regra de negócio no Service. Controle de estoque acrescentado a Produto sem remover os CRUDs de Usuario e Permissao e sem introduzir relacionamentos JPA adicionais.
+
+Saldo inicial zero e somente leitura no contrato do cadastro; estoque mínimo configurável. Entradas e saídas exigem quantidade inteira positiva e motivo. O Service impede saldo negativo e saldo superior a 1.000.000. Transação grava saldo e histórico juntos; bloqueio de linha serializa movimentações concorrentes. Chave UUID por operação evita duplicação de solicitações repetidas. Identificador do responsável vem da sessão autenticada. Histórico permanente impede exclusão do produto movimentado, inclusive com saldo zero; correções são lançamentos inversos. Produtos sem histórico mantêm exclusão normal.
+
+Suíte Maven: 31 testes aprovados. Novos testes verificam entradas/saídas, resumo financeiro, limite e frações, saldo insuficiente, saldo não forjável, preservação do histórico, idempotência, concorrência e segurança HTTP/CSRF. Frontend compilado e lint verificado. Revisão visual adicional: tabela compacta, resumo sem cartões decorativos e textos objetivos.
+
+Teste no navegador em backend/banco isolado: login da conta exclusiva de teste, cadastro de produto, entrada de 10, bloqueio de saída de 11, saída de 8, saldo 2, alerta com mínimo 3 e valor R$ 51,00 para preço R$ 25,50. Nenhum produto de demonstração foi gravado no banco real do autor.
+
+Persistência comprovada reiniciando o backend isolado em H2 de arquivo: produto, saldo 2, duas movimentações e valor R$ 51,00 continuaram disponíveis após novo login. Verificação responsiva sem transbordamento da página. Backend de teste encerrado e arquivos temporários removidos; backend e frontend reais mantidos ativos.

@@ -24,7 +24,7 @@ Referência: Avaliação N1 — Checklist e Aulas 01 a 06. Verificado em 03/10/2
 
 ## Evidências de execução
 
-- Maven package: JAR gerado; 22 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
+- Maven package: JAR gerado; 31 testes aprovados, zero falhas. Relatórios em target/surefire-reports após Maven.
 - npm ci concluído; compilação TypeScript/Vite e lint sem avisos.
 - CRUD manual no navegador das três entidades.
 - Erro do service apresentado no frontend e persistência após reinício. Layout inspecionado em desktop e viewport de 390 × 844.
@@ -54,3 +54,7 @@ Auditoria ampliada registrada em AUDITORIA.md: correções de validação, erros
 - Correção de endereço para conta ainda não confirmada exige a senha existente, preserva a credencial e invalida o link anterior. Formulário sugere conferir domínios com erros comuns.
 
 Conta Brevo e remetente Nexus verificados com o endereço autorizado pelo autor. SMTP configurado localmente; chave protegida pelo Windows em .nexus/smtp.clixml, fora do Git. E-mail de teste registrado como entregue e aberto no provedor. Após corrigir o endereço digitado incorretamente, o autor confirmou o recebimento da mensagem e a ativação da conta. O recebimento externo da recuperação ainda não foi verificado.
+
+### Funcionalidade própria — Estoque
+
+Produto evoluído com estoque mínimo e saldo controlado por movimentações. Tela Estoque integrada à API e H2, com resumo, tabela, filtro de reposição, entradas/saídas e histórico. Camadas EstoqueController → EstoqueService → Repository. Regras de saldo, concorrência, idempotência e preservação de histórico testadas. Os três CRUDs acadêmicos foram mantidos; a exclusão de produto com histórico retorna conflito por regra de negócio.

@@ -98,4 +98,22 @@ class CrudIntegrationTests {
         assertEquals("http://localhost:5173", cors.headers().firstValue("Access-Control-Allow-Origin").orElse(""));
         assertEquals(403, call("GET", "/produtos", null).statusCode());
     }
+    @Test void estoqueHttpAutenticadoComCsrfESaldoNaoForjavel() throws Exception {
+        var anonimo = HttpClient.newHttpClient();
+        assertEquals(401, anonimo.send(HttpRequest.newBuilder(URI.create("http://localhost:"+port+"/api/estoque/resumo")).GET().build(), HttpResponse.BodyHandlers.ofString()).statusCode());
+        var criado = call("POST", "/api/produtos", "{\"nome\":\"Estoque HTTP\",\"preco\":12.50,\"estoqueMinimo\":2,\"quantidade\":999}");
+        assertEquals(201, criado.statusCode()); assertTrue(criado.body().contains("\"quantidade\":0"));
+        String id = criado.body().replaceAll("(?s).*\"id\":([0-9]+).*", "$1");
+        String caminho = "/api/estoque/produtos/"+id+"/movimentacoes";
+        String movimento = "{\"tipo\":\"ENTRADA\",\"quantidade\":5,\"motivo\":\"Reposição HTTP\",\"chave\":\""+java.util.UUID.randomUUID()+"\"}";
+        assertEquals(403, client.send(HttpRequest.newBuilder(URI.create("http://localhost:"+port+caminho)).header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(movimento)).build(), HttpResponse.BodyHandlers.ofString()).statusCode());
+        assertEquals(201, call("POST", caminho, movimento).statusCode());
+        assertEquals(201, call("POST", caminho, movimento).statusCode());
+        assertTrue(call("GET", caminho, null).body().contains("\"total\":1"));
+        assertTrue(call("GET", "/api/produtos/"+id, null).body().contains("\"quantidade\":5"));
+        assertEquals(400, call("POST", caminho, movimento.replace("\"quantidade\":5", "\"quantidade\":1.5")).statusCode());
+        assertEquals(409, call("POST", caminho, movimento.replace("ENTRADA", "SAIDA").replace("\"quantidade\":5", "\"quantidade\":6").replaceAll("[a-f0-9]{8}-[a-f0-9-]{27,}", java.util.UUID.randomUUID().toString())).statusCode());
+        assertEquals(409, call("DELETE", "/api/produtos/"+id, null).statusCode());
+        assertEquals(200, call("GET", "/api/estoque/resumo", null).statusCode());
+    }
 }

@@ -12,6 +12,16 @@ public class Produto {
     private String nome;
     @Column(precision = 11, scale = 2)
     private BigDecimal preco;
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int quantidade;
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int estoqueMinimo;
+
+    public int getQuantidade() { return quantidade; }
+    public void setQuantidade(int quantidade) { this.quantidade = quantidade; }
+    public int getEstoqueMinimo() { return estoqueMinimo; }
+    public void setEstoqueMinimo(int estoqueMinimo) { this.estoqueMinimo = estoqueMinimo; }
 
     public Produto() {
     }

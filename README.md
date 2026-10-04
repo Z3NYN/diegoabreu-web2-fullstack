@@ -1,11 +1,13 @@
 # Nexus
 
-**Gestão de usuários, permissões e produtos em uma aplicação full stack.**
+**Controle de estoque com cadastro de produtos, entradas, saídas e histórico de movimentações.**
 
 Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programação Web II — UEG**, com base nas Aulas 01 a 06. A interface reúne os três cadastros, com criação, consulta, edição e exclusão integradas à API e ao banco de dados.
 
 ## Funcionalidades
 
+- Controle de saldo, entradas e saídas de produtos, histórico persistente e alertas de reposição.
+- Resumo de unidades e valor do estoque ao preço cadastrado.
 - CRUD completo de usuários, permissões e produtos.
 - Formulários controlados, validação de campos e mensagens de erro.
 - E-mail e username únicos, com normalização dos dados no servidor.
@@ -170,7 +172,7 @@ Exemplos de corpo para cadastro:
 **Produto**
 
 ```json
-{"nome": "Teclado", "preco": 99.90}
+{"nome": "Teclado", "preco": 99.90, "estoqueMinimo": 2}
 ```
 
 A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgnore`. O formulário de gestão utiliza nome, username e e-mail; este contrato preserva a senha existente durante a edição. A senha é definida pelo cadastro de conta ou pela recuperação, nunca pelos endpoints de edição do CRUD.
@@ -191,6 +193,56 @@ A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgn
 
 As escritas exigem o token obtido de `/api/auth/csrf` no cabeçalho `X-CSRF-TOKEN` e os cookies da mesma sessão. O frontend faz isso automaticamente. Login e confirmação rotacionam ou consomem seus respectivos tokens; nenhum token de recuperação é retornado ao navegador pela solicitação de envio.
 
+## Controle de estoque
+
+Compatível com a proposta de funcionalidades próprias da N1 (checklist, p. 1) e de regras no Service (Aula 06, p. 21). O controle de estoque complementa a entidade própria Produto e mantém os CRUDs acadêmicos.
+
+1. Cadastre um produto em **Produtos**, informando preço e estoque mínimo. O saldo inicial é zero.
+2. Em **Estoque**, selecione o produto na tabela e registre uma **entrada**, com quantidade inteira e motivo.
+3. Registre **saídas** para vendas, consumo ou outros destinos. O sistema impede quantidade superior ao saldo.
+4. Consulte saldo e histórico. Saldo igual ou menor que o mínimo sinaliza reposição; saldo zero aparece como sem estoque.
+
+Cada operação aceita 1 a 1.000.000 unidades; o saldo máximo é 1.000.000 por produto. Quantidades fracionárias e motivos vazios são rejeitados pelo servidor. O valor do resumo é quantidade × preço cadastrado, não faturamento nem custo contábil.
+
+Movimentações são permanentes. Para corrigir um lançamento, registre uma movimentação inversa com o motivo da correção. Produtos com histórico não podem ser excluídos, mesmo com saldo zero; os demais continuam com CRUD completo. O frontend fornece uma chave UUID por operação e conserva a mesma chave ao repetir uma tentativa com os mesmos dados. Bloqueio de linha e transação garantem que saldo e histórico sejam gravados juntos, impedindo saídas concorrentes acima do saldo. Idempotência evita duplicação quando a mesma solicitação chega novamente; não agrupa operações diferentes.
+
+| Método | Endpoint | Finalidade |
+| --- | --- | --- |
+| GET | `/api/estoque/resumo` | Totais e alertas de reposição |
+| GET | `/api/estoque/produtos/{id}/movimentacoes` | Últimas 100 movimentações e total do histórico |
+| POST | `/api/estoque/produtos/{id}/movimentacoes` | Registrar entrada ou saída |
+
+Corpo de movimentação (o frontend gera a chave automaticamente):
+
+```json
+{"tipo":"ENTRADA","quantidade":10,"motivo":"Reposição de mercadoria","chave":"986f5135-5db8-4fbb-af3a-2ea7aa9a8040"}
+```
+
+Endpoints protegidos por sessão e CSRF. O usuário responsável é obtido da sessão, nunca do corpo enviado pelo cliente. O histórico exibe os últimos 100 registros; os anteriores permanecem no banco. Estoque é compartilhado entre usuários autenticados, com os mesmos controles de acesso dos cadastros existentes.
+
+```mermaid
+sequenceDiagram
+    actor Pessoa
+    participant React
+    participant Controller
+    participant Service
+    participant H2
+    Pessoa->>React: Informar entrada ou saída e motivo
+    React->>Controller: POST com sessão, CSRF e chave da operação
+    Controller->>Service: Pedido e usuário da sessão
+    Service->>H2: Bloquear linha do produto
+    Service->>Service: Validar quantidade, chave e saldo
+    alt Pedido já registrado com os mesmos dados
+        Service-->>React: Retornar movimentação existente
+    else Nova operação válida
+        Service->>H2: Gravar saldo e histórico na mesma transação
+        Service-->>React: Movimentação registrada
+    else Saldo insuficiente ou pedido inválido
+        Service-->>React: Erro sem alterar saldo
+    end
+    React->>Controller: Recarregar resumo, produtos e histórico
+```
+
 ## Banco de dados
 
 A configuração padrão está em `src/main/resources/application.properties`:
@@ -204,7 +256,7 @@ Execute o backend sempre pela raiz do projeto para utilizar o mesmo arquivo `dat
 
 ### Modelo de dados
 
-As três entidades possuem identificador gerado automaticamente. Neste escopo, os cadastros são independentes, sem relacionamentos JPA entre si. `Permissao` representa um cadastro acadêmico; não determina o acesso ao CRUD.
+As entidades possuem identificador gerado automaticamente. Usuario, Permissao e Produto mantêm seus CRUDs. MovimentacaoEstoque registra os identificadores do produto e do usuário sem introduzir relacionamentos JPA adicionais. `Permissao` representa um cadastro acadêmico; não determina o acesso ao CRUD.
 
 ```mermaid
 erDiagram
@@ -232,6 +284,20 @@ erDiagram
         Long id PK
         String nome
         BigDecimal preco "Até duas casas decimais"
+        int quantidade "Saldo; somente leitura na API"
+        int estoqueMinimo
+    }
+    MovimentacaoEstoque {
+        Long id PK
+        String chave UK "Idempotência; interno"
+        Long produtoId
+        Long usuarioId
+        String tipo "ENTRADA ou SAIDA"
+        int quantidade
+        int saldoAnterior
+        int saldoAtual
+        String motivo
+        Instant criadoEm
     }
 ```
 
@@ -358,7 +424,7 @@ npm run build
 npm run lint
 ```
 
-Na verificação de **03/10/2026**, os **22 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação, além da correção de e-mail condicionada à senha. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste. O SMTP externo da Brevo também foi configurado e testado; o autor confirmou o recebimento da confirmação e a ativação da conta. O recebimento do link de recuperação na caixa pessoal não foi verificado, embora o fluxo tenha testes HTTP e SMTP aprovados. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
+Na verificação de **03/10/2026**, os **31 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação, além da correção de e-mail condicionada à senha. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste. O SMTP externo da Brevo também foi configurado e testado; o autor confirmou o recebimento da confirmação e a ativação da conta. O recebimento do link de recuperação na caixa pessoal não foi verificado, embora o fluxo tenha testes HTTP e SMTP aprovados. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
 
 O projeto compila para Java 21. A execução disponível nesta auditoria utilizou JDK 22; a execução especificamente no JDK 21 ainda precisa ser confirmada.
 

@@ -33,7 +33,7 @@ A confirmação e a recuperação de senha têm implementação SMTP e testes de
 - Frontend: npm run build e npm run lint aprovados. npm audit e npm audit --omit=dev retornaram zero vulnerabilidades conhecidas no momento da consulta.
 - Navegador: e-mail válido aceito; domínio sem ponto, dois @ e espaços rejeitados. Username com hífen aceito. Nenhum aviso/erro de script na consulta realizada.
 - Página de confirmação com token inválido: erro explícito, sem falso sucesso.
-- Responsividade: tela móvel inspecionada; largura do conteúdo medida em 390 e 1280 pixels sem transbordamento horizontal. Captura completa do desktop não ficou disponível pela ferramenta, portanto essa inspeção visual integral não é afirmada.
+- Responsividade na verificação inicial: tela móvel inspecionada e larguras de 390 e 1280 pixels sem transbordamento horizontal. A revisão visual posterior ampliou a verificação e produziu capturas completas, registradas em [Revisão visual e de UX](docs/REVISAO-UX.md).
 - Portas locais verificadas: 127.0.0.1:8080 e 127.0.0.1:5173.
 
 ## Revisão do checklist N1
@@ -106,3 +106,12 @@ Suíte Maven: 31 testes aprovados. Novos testes verificam entradas/saídas, resu
 Teste no navegador em backend/banco isolado: login da conta exclusiva de teste, cadastro de produto, entrada de 10, bloqueio de saída de 11, saída de 8, saldo 2, alerta com mínimo 3 e valor R$ 51,00 para preço R$ 25,50. Nenhum produto de demonstração foi gravado no banco real do autor.
 
 Persistência comprovada reiniciando o backend isolado em H2 de arquivo: produto, saldo 2, duas movimentações e valor R$ 51,00 continuaram disponíveis após novo login. Verificação responsiva sem transbordamento da página. Backend de teste encerrado e arquivos temporários removidos; backend e frontend reais mantidos ativos.
+
+
+## Revisão visual final e de UX
+
+Navegação lateral no desktop, navegação horizontal no celular, formulários de acesso consistentes e ilustração SVG local com animação leve. Tabela de estoque, produto selecionado, limites e prévia de saldo foram refinados; o CSS foi organizado em base, autenticação e área de trabalho. Não foram adicionadas dependências.
+
+Build e lint aprovados. Revisão nas larguras de 320, 390, 820 e 1280 px; rolagem horizontal na menor largura corrigida. Testes no navegador em banco e sessão isolados: login, validação de e-mail, exibição da senha, erro de confirmação, entrada/saída com atualização do histórico, criação e edição de produto. Teclado, foco após operações, Tab no diálogo e Escape conferidos. Pares de contraste verificados; animação desativada no celular e regra de movimento reduzido preservada no build. A preferência do sistema não foi emulada pelo navegador disponível.
+
+O backend, CSRF, SMTP, regras de sessão e dados persistentes reais não foram alterados nesta revisão. O servidor e os arquivos temporários foram removidos. Capturas e limites de verificação estão em [Revisão visual e de UX](docs/REVISAO-UX.md).

@@ -11,7 +11,14 @@ export default function ConfirmarExclusao({ registro, ocupado, onCancelar, onCon
     elemento?.showModal();
     return () => { elemento?.close(); focoAnterior?.focus(); };
   }, []);
-  return <dialog ref={dialog} className="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={event => { event.preventDefault(); if (!ocupado) onCancelar(); }}>
+  return <dialog ref={dialog} className="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description" onCancel={event => { event.preventDefault(); if (!ocupado) onCancelar(); }} onKeyDown={event => {
+    if (event.key !== 'Tab') return;
+    const botoes = dialog.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+    if (!botoes?.length) return;
+    const primeiro = botoes[0], ultimo = botoes[botoes.length - 1];
+    if (event.shiftKey && document.activeElement === primeiro) { event.preventDefault(); ultimo.focus(); }
+    else if (!event.shiftKey && document.activeElement === ultimo) { event.preventDefault(); primeiro.focus(); }
+  }}>
     <div className="delete-symbol" aria-hidden="true">!</div>
     <h2 id="delete-title">Excluir este registro?</h2>
     <p id="delete-description"><strong>{registro.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.</p>

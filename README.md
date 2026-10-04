@@ -13,12 +13,36 @@ Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programaçã
 - E-mail e username únicos, com normalização dos dados no servidor.
 - Produtos com preço não negativo, até duas casas decimais e representação `BigDecimal` no backend.
 - Persistência em arquivo H2, mantendo os registros após reiniciar a aplicação.
-- Interface responsiva com identidade visual Nexus.
+- Interface responsiva com navegação lateral no desktop e horizontal no celular.
+- Tela de acesso com ilustração SVG local e animação discreta, desativada no celular e com suporte a movimento reduzido.
+- Seleção de produto identificada, filtros de estoque e prévia do saldo antes do lançamento.
 - Busca e ordenação nas listagens, formulário sob demanda e confirmação de exclusão com identificação do registro.
 - Login com e-mail ou username e senha, exigindo confirmação do e-mail antes de acessar os cadastros.
 - Sessão protegida por cookie HttpOnly, verificação no servidor e proteção CSRF nas operações de escrita.
 - Recuperação de senha por e-mail com link de uso único, validade de 30 minutos e encerramento das sessões anteriores.
 - Confirmação de e-mail por SMTP, quando configurado, com token de uso único e expiração em 24 horas.
+
+## Interface
+
+A identidade da Nexus prioriza dados legíveis, ações claras e uma composição sóbria. As telas de autenticação compartilham a mesma apresentação; os formulários oferecem exibição da senha, mensagens de envio e orientação para o próximo passo. A área interna reúne catálogo, movimentações e histórico, com foco visível e navegação por teclado.
+
+![Tela de acesso da Nexus](docs/screenshots/nexus-login-desktop.jpg)
+
+<details>
+<summary>Ver estoque em desktop</summary>
+
+![Estoque da Nexus em desktop](docs/screenshots/nexus-estoque-desktop.jpg)
+
+</details>
+
+<details>
+<summary>Ver estoque em celular</summary>
+
+![Estoque da Nexus em celular](docs/screenshots/nexus-estoque-mobile.jpg)
+
+</details>
+
+As capturas de estoque utilizam exclusivamente dados de uma base isolada de testes. Consulte o [relatório da revisão visual e de UX](docs/REVISAO-UX.md) para as verificações e os limites registrados.
 
 ## Tecnologias
 
@@ -114,14 +138,14 @@ Spring Security exige autenticação para os cadastros e valida CSRF nas operaç
 
 Os cadastros são acessíveis apenas após o login, inclusive quando alguém tenta chamar a API diretamente. A sessão expira após 30 minutos de inatividade; **Sair** a encerra no servidor. Senhas são armazenadas com BCrypt. Não há conta padrão nem senha de administrador incorporada ao projeto.
 
-Contas antigas sem senha ou com senha anterior em texto simples não permitem login. Para habilitá-las, use **Não recebi a confirmação** e, após confirmar o endereço, **Esqueci minha senha**. Os registros existentes são preservados.
+Contas antigas sem senha ou com senha anterior em texto simples não permitem login. Para habilitá-las, abra **Ajuda com a confirmação de e-mail → Não recebi o link** e, após confirmar o endereço, **Esqueci minha senha**. Os registros existentes são preservados.
 
-Se o endereço foi digitado errado no cadastro, use **Errei meu e-mail no cadastro**. Informe o username ou endereço anterior, a senha cadastrada e o e-mail correto. Essa opção atende contas ainda não confirmadas: preserva a senha, invalida o link anterior e envia uma nova confirmação. O formulário também sugere conferir domínios com erros comuns de digitação, sem alterar o endereço automaticamente.
+Se o endereço foi digitado errado no cadastro, abra **Ajuda com a confirmação de e-mail → Cadastrei o endereço errado**. Informe o username ou endereço anterior, a senha cadastrada e o e-mail correto. Essa opção atende contas ainda não confirmadas: preserva a senha, invalida o link anterior e envia uma nova confirmação. O formulário também sugere conferir domínios com erros comuns de digitação, sem alterar o endereço automaticamente.
 
 ```mermaid
 flowchart TD
     inicio["Abrir Nexus"] --> sessao{"Sessão válida?"}
-    sessao -->|"Sim"| plataforma["Cadastros protegidos"]
+    sessao -->|"Sim"| plataforma["Estoque e cadastros protegidos"]
     sessao -->|"Não"| login["Tela de login"]
     login --> credenciais{"Senha correta e e-mail confirmado?"}
     credenciais -->|"Sim"| plataforma
@@ -146,6 +170,7 @@ src/
 │           ├── components/
 │           ├── pages/
 │           ├── services/ # api.ts e estoque.ts
+│           ├── styles/   # autenticação e área de trabalho
 │           └── types/
 └── test/java/
 scripts/Iniciar-Com-Email.ps1
@@ -210,7 +235,7 @@ As escritas exigem o token obtido de `/api/auth/csrf` no cabeçalho `X-CSRF-TOKE
 Compatível com a proposta de funcionalidades próprias da N1 (checklist, p. 1) e de regras no Service (Aula 06, p. 21). O controle de estoque complementa a entidade própria Produto e mantém os CRUDs acadêmicos.
 
 1. Cadastre um produto em **Produtos**, informando preço e estoque mínimo. O saldo inicial é zero.
-2. Em **Estoque**, selecione o produto na tabela e registre uma **entrada**, com quantidade inteira e motivo.
+2. Em **Estoque**, busque e selecione o produto na tabela. Confira o saldo previsto e registre uma **entrada**, com quantidade inteira e motivo.
 3. Registre **saídas** para vendas, consumo ou outros destinos. O sistema impede quantidade superior ao saldo.
 4. Consulte saldo e histórico. Saldo igual ou menor que o mínimo sinaliza reposição; saldo zero aparece como sem estoque.
 
@@ -439,6 +464,8 @@ npm run lint
 Na verificação de **03/10/2026**, os **31 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação, além da correção de e-mail condicionada à senha. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste. O SMTP externo da Brevo também foi configurado e testado; o autor confirmou o recebimento da confirmação e a ativação da conta. O recebimento do link de recuperação na caixa pessoal não foi verificado, embora o fluxo tenha testes HTTP e SMTP aprovados. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
 
 O projeto compila para Java 21. A execução disponível nesta auditoria utilizou JDK 22; a execução especificamente no JDK 21 ainda precisa ser confirmada.
+
+A revisão visual de 03/10/2026 também passou por build e lint. A aplicação foi inspecionada em desktop, tablet e celular, nas larguras de 320 a 1280 px. Entradas, saídas, criação e edição de produto foram executadas em banco separado. Navegação por teclado, foco, contraste, mensagens e estados vazios foram conferidos. A animação foi desativada no celular; a regra de movimento reduzido foi verificada no CSS e no build, sem emulação da preferência do sistema. As evidências completas estão em [Revisão visual e de UX](docs/REVISAO-UX.md).
 
 ## Escopo acadêmico
 

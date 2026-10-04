@@ -58,3 +58,8 @@ Conta Brevo e remetente Nexus verificados com o endereço autorizado pelo autor.
 ### Funcionalidade própria — Estoque
 
 Produto evoluído com estoque mínimo e saldo controlado por movimentações. Tela Estoque integrada à API e H2, com resumo, tabela, filtro de reposição, entradas/saídas e histórico. Camadas EstoqueController → EstoqueService → Repository. Regras de saldo, concorrência, idempotência e preservação de histórico testadas. Os três CRUDs acadêmicos foram mantidos; a exclusão de produto com histórico retorna conflito por regra de negócio.
+
+
+### Revisão visual e de UX
+
+Requisitos acadêmicos e camadas preservados. Build e lint aprovados após o refinamento. Interface verificada em desktop, tablet e celular, com navegação por teclado e foco visível. Testes de estoque e cadastro executados em H2 separado. As capturas finais e os limites da verificação estão em [Revisão visual e de UX](docs/REVISAO-UX.md).

@@ -88,3 +88,9 @@ O formulário sugere conferir alguns domínios frequentemente digitados incorret
 ## Refinamento da experiência
 
 Interface refinada com identidade Nexus, formulários e mensagens mais legíveis, navegação responsiva, busca local nos três cadastros, foco no formulário durante a edição e opção de mostrar/ocultar a senha. Ajuda de confirmação agrupada para reduzir distrações na entrada. A busca filtra os registros carregados; não substitui paginação no servidor.
+
+### Revisão de UX dos cadastros
+
+A listagem passou a ocupar o espaço principal. O botão Novo cadastro abre o formulário com foco no primeiro campo; salvar fecha o formulário e atualiza os registros. Busca, ordenação por nome ou identificador mais recente, estados de lista vazia e carregamento facilitam a consulta. A exclusão utiliza um diálogo modal com nome do registro, aviso de irreversibilidade e foco inicial na ação de manter o registro. Interface de entrada e estilos foram consolidados para manter consistência entre celular e desktop.
+
+Verificação no navegador: navegação entre cadastros, abertura/cancelamento do formulário, busca sem resultados e cancelamento da exclusão. Nenhum registro real foi removido durante essa revisão. Compilação TypeScript/Vite e lint aprovados; backend preservado nesta alteração.

@@ -12,6 +12,7 @@ Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programaçã
 - Produtos com preço não negativo, até duas casas decimais e representação `BigDecimal` no backend.
 - Persistência em arquivo H2, mantendo os registros após reiniciar a aplicação.
 - Interface responsiva com identidade visual Nexus.
+- Busca e ordenação nas listagens, formulário sob demanda e confirmação de exclusão com identificação do registro.
 - Login com e-mail ou username e senha, exigindo confirmação do e-mail antes de acessar os cadastros.
 - Sessão protegida por cookie HttpOnly, verificação no servidor e proteção CSRF nas operações de escrita.
 - Recuperação de senha por e-mail com link de uso único, validade de 30 minutos e encerramento das sessões anteriores.

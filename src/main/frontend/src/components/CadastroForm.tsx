@@ -15,12 +15,13 @@ export default function CadastroForm({ campos, editando, ocupado, onSalvar, onCa
   }
   return <form onSubmit={enviar} className="panel form">
     <h2>{editando ? 'Editar cadastro' : 'Novo cadastro'}</h2>
-    {campos.map(campo => <label key={campo.nome}>{campo.label}
+    <p className="form-hint">{editando ? 'Atualize os dados e salve as alterações.' : 'Preencha os dados abaixo. Os campos marcados com * são obrigatórios.'}</p>
+    {campos.map(campo => <label key={campo.nome}>{campo.label}{campo.obrigatorio && <span className="required-mark" aria-hidden="true"> *</span>}
       <input name={campo.nome} type={campo.tipo || 'text'} required={campo.obrigatorio} maxLength={campo.nome === 'email' ? 254 : campo.nome === 'username' ? 50 : campo.nome === 'nome' ? 120 : 255} minLength={campo.nome === 'username' ? 3 : undefined} pattern={campo.nome === 'email' ? '[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}' : campo.nome === 'username' ? '[a-zA-Z0-9._\\-]{3,50}' : undefined} min={campo.tipo === 'number' ? 0 : undefined} max={campo.tipo === 'number' ? 999999999.99 : undefined} step={campo.tipo === 'number' ? '0.01' : undefined}
         value={valores[campo.nome] || ''} disabled={ocupado} onChange={event => setValores({ ...valores, [campo.nome]: event.target.value })} />
     </label>)}
     {campos.some(campo => campo.nome === 'email') && <p className="form-hint">A confirmação comprova o acesso à caixa de e-mail. Alterar o endereço exige uma nova confirmação.</p>}
     <div className="actions"><button disabled={ocupado} type="submit">{ocupado ? 'Aguarde…' : editando ? 'Salvar alterações' : 'Cadastrar'}</button>
-      {editando && <button className="secondary" type="button" disabled={ocupado} onClick={onCancelar}>Cancelar edição</button>}</div>
+      <button className="secondary" type="button" disabled={ocupado} onClick={onCancelar}>Cancelar</button></div>
   </form>;
 }

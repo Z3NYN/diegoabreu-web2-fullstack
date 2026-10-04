@@ -2,7 +2,7 @@
 
 **Controle de estoque com cadastro de produtos, entradas, saídas e histórico de movimentações.**
 
-Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programação Web II — UEG**, com base nas Aulas 01 a 06. A interface reúne os três cadastros, com criação, consulta, edição e exclusão integradas à API e ao banco de dados.
+Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programação Web II — UEG**, com base nas Aulas 01 a 06. A Nexus permite cadastrar produtos, registrar entradas e saídas, consultar o histórico e identificar itens que precisam de reposição. Os cadastros de usuários e permissões do projeto acadêmico foram preservados.
 
 ## Funcionalidades
 
@@ -51,11 +51,21 @@ cd diegoabreu-web2-fullstack
 
 ### 1. Iniciar o backend
 
-Na pasta que contém `pom.xml`, execute no PowerShell:
+Para utilizar cadastro de conta, confirmação e recuperação por e-mail, execute no Windows PowerShell, na pasta que contém `pom.xml`:
+
+```powershell
+.\scripts\Iniciar-Com-Email.ps1
+```
+
+Na primeira execução, informe o login SMTP, o remetente verificado e a chave SMTP solicitada de forma oculta. A configuração é salva localmente com proteção do Windows e fica fora do Git. Nas próximas execuções, o script reutiliza essa configuração. Consulte a seção de configuração de e-mail abaixo para os detalhes.
+
+Para iniciar apenas a API, com o envio de e-mail desativado por padrão:
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
+
+Nesse modo, contas já confirmadas podem entrar; a criação de novas contas e a recuperação exigem habilitar o SMTP. Não há usuário de demonstração ou senha padrão.
 
 ### 2. Iniciar o frontend
 
@@ -71,7 +81,7 @@ npm run dev
 
 Abra [http://localhost:5173](http://localhost:5173). A API utiliza `http://localhost:8080/api`. Mantenha os dois terminais em execução.
 
-No Linux ou macOS, substitua `.\mvnw.cmd` por `./mvnw`; se necessário, conceda permissão com `chmod +x mvnw`.
+No Linux ou macOS, configure as variáveis SMTP descritas na seção de e-mail e utilize `./mvnw spring-boot:run`; se necessário, conceda permissão com `chmod +x mvnw`. O script com armazenamento DPAPI é específico do Windows.
 
 O frontend utiliza a porta 5173 fixa. Se ela estiver ocupada, encerre a instância anterior. Para alterar o endereço da API, copie `src/main/frontend/.env.example` para `.env.local` e ajuste `VITE_API_URL`. Uma mudança na origem do frontend também exige ajustar o CORS no backend.
 
@@ -135,7 +145,7 @@ src/
 │       └── src/
 │           ├── components/
 │           ├── pages/
-│           ├── services/api.ts
+│           ├── services/ # api.ts e estoque.ts
 │           └── types/
 └── test/java/
 scripts/Iniciar-Com-Email.ps1
@@ -143,7 +153,7 @@ scripts/Iniciar-Com-Email.ps1
 
 ## API
 
-Os recursos disponíveis são `usuarios`, `permissoes` e `produtos`.
+Os recursos de cadastro disponíveis são `usuarios`, `permissoes` e `produtos`. Os endpoints de estoque estão descritos em [Controle de estoque](#controle-de-estoque).
 
 | Método | Endpoint | Resultado |
 | --- | --- | --- |
@@ -152,6 +162,8 @@ Os recursos disponíveis são `usuarios`, `permissoes` e `produtos`.
 | POST | `/api/{recurso}` | Cadastro — 201 |
 | PUT | `/api/{recurso}/{id}` | Atualização — 200 |
 | DELETE | `/api/{recurso}/{id}` | Exclusão, sem corpo — 204 |
+
+A exclusão de produto com movimentações retorna **409**, preservando o histórico. Produtos sem movimentações podem ser excluídos normalmente.
 
 Dados inválidos retornam 400; registros inexistentes, 404; conflitos de unicidade, 409. Sem sessão, os recursos protegidos retornam 401; falta de CSRF válido retorna 403. As mensagens de erro são devolvidas em JSON no campo `message`.
 

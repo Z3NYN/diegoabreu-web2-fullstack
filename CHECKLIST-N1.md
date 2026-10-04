@@ -12,7 +12,7 @@ Referência: Avaliação N1 — Checklist e Aulas 01 a 06. Verificado em 03/10/2
 | H2 em application.properties e JpaRepository por entidade | Implementado e verificado | resources/application.properties, repository/; produto permaneceu após reinício real. |
 | Pacotes controller, service, repository e model | Implementado e inspecionado | src/main/java/br/ueg/trindade/diego_web2_fullstack. |
 | Controller REST /api com GET POST PUT DELETE, PathVariable, apenas Service | Implementado e verificado | Três controllers; testes das cinco operações por recurso e 404. |
-| Regra de negócio no Service | Implementado e verificado | ProdutoService: nome obrigatório, preço não negativo; testes POST/PUT e erro de validação apresentado no navegador. |
+| Regra de negócio no Service | Implementado e verificado | ProdutoService e EstoqueService: nome e preço válidos, saldo não negativo, transação e bloqueio concorrente, idempotência e histórico preservado; testes HTTP e integração no navegador. |
 | Axios services/api.ts, baseURL e CrossOrigin | Implementado e verificado | services/api.ts, controllers, SecurityConfig; preflight e integração no navegador. |
 | components: listagem, item via props, formulário controlado e hooks | Implementado e verificado | CadastroList, CadastroItem, CadastroForm; useState e useEffect em CadastroPage para carregar API. |
 | pages: UsuariosPage PermissoesPage e página própria | Implementado e verificado | Páginas configuram CadastroPage, que reutiliza lógica e estados das telas. |

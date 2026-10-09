@@ -56,6 +56,6 @@ Para repetir manualmente, siga os comandos de execução do README e realize os 
 - O lock inicial trouxe um aviso de audit em `source-map-js` 1.2.1. Somente esse pacote transitivo foi corrigido para 1.2.2; nenhuma versão declarada no `package.json` mudou. Build, lint, audit e instalação limpa foram conferidos após o ajuste.
 - Não foi testado PostgreSQL: o banco desta etapa é H2. O driver exigido está incluído.
 - Não há teste de login, JWT ou roteamento, pois essas funcionalidades não integram o escopo pedido.
-- A publicação no GitHub depende da autenticação da conta Z3NYN e ainda não foi realizada na geração desta documentação. Nenhum histórico de commits anterior foi fabricado.
+- O código foi publicado na conta Z3NYN, na branch `atividade-n1-braully` de `diegoabreu-web2-fullstack`, com [PR nº 1 em rascunho](https://github.com/Z3NYN/diegoabreu-web2-fullstack/pull/1). O código não foi incorporado à `main` nem testado no GitHub Actions. Nenhum histórico de commits anterior foi fabricado.
 
 As saídas resumidas efetivas do Maven e da integração pelo navegador estão na pasta `verificacao/`. Os binários, o banco de teste, as ferramentas portáteis e os pacotes instalados não fazem parte do ZIP.

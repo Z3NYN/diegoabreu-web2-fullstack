@@ -96,7 +96,18 @@ A imagem do Spring Initializr seleciona **Java 25**: para esta avaliação, corr
 
 ## Publicar no GitHub
 
-O projeto **não foi publicado** e nenhum repositório remoto foi criado por esta entrega.
+O projeto foi publicado em 09/10/2026 na conta **Z3NYN**, na branch [atividade-n1-braully](https://github.com/Z3NYN/diegoabreu-web2-fullstack/tree/atividade-n1-braully) do repositório existente `diegoabreu-web2-fullstack`. O [PR nº 1](https://github.com/Z3NYN/diegoabreu-web2-fullstack/pull/1) está em **rascunho para revisão**; esta entrega não foi incorporada à branch `main`.
+
+Para obter exatamente esta versão pelo Git:
+
+```sh
+git clone --branch atividade-n1-braully https://github.com/Z3NYN/diegoabreu-web2-fullstack.git
+cd diegoabreu-web2-fullstack
+```
+
+Depois, siga os comandos de execução acima. Ao compartilhar a atividade, envie o link da **branch** indicada, que contém este projeto testado, ou do PR.
+
+Para publicar uma cópia em outro repositório vazio, o procedimento é:
 
 1. No GitHub, crie um repositório vazio para a atividade, sem inicializar README ou `.gitignore`.
 2. Abra um terminal na raiz `projeto-n1` e execute:
@@ -113,7 +124,7 @@ git push -u origin main
 Substitua a URL pelo endereço real do repositório e autentique-se quando solicitado. O `.gitignore` exclui o banco local, os pacotes instalados e os arquivos gerados pelos builds.
 
 3. Confira no GitHub se as fontes, `pom.xml`, `package-lock.json` e estas instruções apareceram.
-4. Copie o link do repositório e envie na atividade N1 no Google Sala de Aula.
+4. Copie o link da versão efetivamente publicada e envie na atividade N1 no Google Sala de Aula.
 5. Em alterações futuras, faça commits reais e frequentes. O histórico de trabalho anterior não foi inventado; esta entrega não comprova commits regulares ao longo do semestre.
 
 Os testes efetivamente executados e seus limites estão em [TESTES.md](TESTES.md).

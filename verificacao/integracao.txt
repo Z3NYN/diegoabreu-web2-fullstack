@@ -1,0 +1,8 @@
+PASS JAR Java21 e Vite iniciados nas portas 8080/5173
+PASS navegador usuarios: POST -> listagem/reload -> GET id -> PUT -> DELETE/reload
+PASS navegador permissoes: POST -> listagem/reload -> GET id -> PUT -> DELETE/reload
+PASS navegador produtos: POST -> listagem/reload -> GET id -> PUT -> DELETE/reload
+PASS sem erros JavaScript e sem bloqueio de Security/CORS
+Backend encerrado; verificando persistência após reinício
+PASS H2 em arquivo persiste entre reinícios e todos dados de teste foram removidos
+Serviços locais de teste encerrados

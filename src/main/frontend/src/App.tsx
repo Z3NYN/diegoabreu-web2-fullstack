@@ -1,11 +1,16 @@
-import AuthGate from './pages/AuthGate';
-import ConfirmarEmailPage from './pages/ConfirmarEmailPage';
-import RedefinirSenhaPage from './pages/RedefinirSenhaPage';
-export default function App() {
-  const params = new URLSearchParams(window.location.search);
-  const confirmacao = params.get('confirmar-email');
-  const recuperacao = params.get('recuperar-senha');
-  if (confirmacao !== null) return <ConfirmarEmailPage token={confirmacao} />;
-  if (recuperacao !== null) return <RedefinirSenhaPage token={recuperacao} />;
-  return <AuthGate />;
+import UsuariosPage from "./pages/UsuariosPage";
+import PermissoesPage from "./pages/PermissoesPage";
+import ProdutosPage from "./pages/ProdutosPage";
+function App() {
+  return (
+    <main>
+      <h1>Programação Web II - N1</h1>
+      <UsuariosPage />
+      <hr />
+      <PermissoesPage />
+      <hr />
+      <ProdutosPage />
+    </main>
+  );
 }
+export default App;

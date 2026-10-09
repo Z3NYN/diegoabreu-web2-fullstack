@@ -1,0 +1,8 @@
+JDK 21; Maven 3.9.11; Spring Boot 4.1.0
+Comando: mvn --offline clean verify (repositorio local de dependencias ja baixadas)
+BUILD SUCCESS
+
+-------------------------------------------------------------------------------
+Test set: br.ueg.trindade.braullyweb2fullstack.CrudIntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 13.83 s -- in br.ueg.trindade.braullyweb2fullstack.CrudIntegrationTest

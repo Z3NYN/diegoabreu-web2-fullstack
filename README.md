@@ -1,482 +1,119 @@
-# Nexus
+# N1 — Programação Web II
 
-**Controle de estoque com cadastro de produtos, entradas, saídas e histórico de movimentações.**
+Projeto baseado exclusivamente nos PDFs das Aulas 01–06 e no checklist `Aula_06.5-Avaliacao-N1.pdf`. O frontend enviado em `frontend.tar.gz` foi usado como ponto inicial, com as versões declaradas preservadas. O único ajuste de dependência no `package-lock.json` foi o patch de `source-map-js` de 1.2.1 para 1.2.2, compatível com a versão exigida pelo PostCSS, após um aviso concreto no audit.
 
-Projeto de **Diego Abreu**, desenvolvido para a avaliação N1 de **Programação Web II — UEG**, com base nas Aulas 01 a 06. A Nexus permite cadastrar produtos, registrar entradas e saídas, consultar o histórico e identificar itens que precisam de reposição. Os cadastros de usuários e permissões do projeto acadêmico foram preservados.
+## O que foi implementado
 
-## Funcionalidades
+- Spring Boot 4.1.0, Maven, Java 21 e grupo `br.ueg.trindade`.
+- Dependências Spring Web, Data JPA, Rest Repositories, H2, PostgreSQL Driver, DevTools e Spring Security.
+- CRUDs de Usuario (`id`, `nome`, `username`, `senha`, `email`), Permissao (`id`, `nome`, `descricao`) e Produto (`id`, `nome`, `descricao`, `preco`).
+- Camadas `model`, `repository`, `service` e `controller`; cada controller acessa somente seu service.
+- Regra de negócio de Produto: preço não pode ser negativo. A validação fica no service.
+- React + Vite + TypeScript em `src/main/frontend`, com Axios, componentes de formulário/listagem/item, páginas, props, `useState` e `useEffect`.
+- Cadastro, listagem, edição e exclusão nas três páginas, com atualização da lista após as operações.
+- DTOs de entrada e resposta para Usuario e `@JsonIgnore` na senha do modelo: senha recebida no cadastro e omitida de todas as respostas JSON. Conforme Aula 05, o PUT de Usuario preserva a senha cadastrada.
 
-- Controle de saldo, entradas e saídas de produtos, histórico persistente e alertas de reposição.
-- Resumo de unidades e valor do estoque ao preço cadastrado.
-- CRUD completo de usuários, permissões e produtos.
-- Formulários controlados, validação de campos e mensagens de erro.
-- E-mail e username únicos, com normalização dos dados no servidor.
-- Produtos com preço não negativo, até duas casas decimais e representação `BigDecimal` no backend.
-- Persistência em arquivo H2, mantendo os registros após reiniciar a aplicação.
-- Interface responsiva com navegação lateral no desktop e horizontal no celular.
-- Tela de acesso com ilustração SVG local e animação discreta, desativada no celular e com suporte a movimento reduzido.
-- Seleção de produto identificada, filtros de estoque e prévia do saldo antes do lançamento.
-- Busca e ordenação nas listagens, formulário sob demanda e confirmação de exclusão com identificação do registro.
-- Login com e-mail ou username e senha, exigindo confirmação do e-mail antes de acessar os cadastros.
-- Sessão protegida por cookie HttpOnly, verificação no servidor e proteção CSRF nas operações de escrita.
-- Recuperação de senha por e-mail com link de uso único, validade de 30 minutos e encerramento das sessões anteriores.
-- Confirmação de e-mail por SMTP, quando configurado, com token de uso único e expiração em 24 horas.
+`App.tsx` apenas renderiza as três páginas. A configuração de Security libera as requisições deste estágio e desabilita CSRF para permitir POST/PUT/DELETE, sem implementar autenticação.
 
-## Interface
+## Requisitos para executar
 
-A identidade da Nexus prioriza dados legíveis, ações claras e uma composição sóbria. As telas de autenticação compartilham a mesma apresentação; os formulários oferecem exibição da senha, mensagens de envio e orientação para o próximo passo. A área interna reúne catálogo, movimentações e histórico, com foco visível e navegação por teclado.
+- JDK **21**; confira `java -version` e `javac -version`.
+- Maven 3.9 ou superior; confira `mvn -version` e se ele utiliza o JDK 21.
+- Node.js **22.12 ou superior**, ou **24**, e npm. A versão de Vite do frontend enviado exige um Node compatível.
+- Portas 8080 (backend) e 5173 (frontend) disponíveis.
 
-![Tela de acesso da Nexus](docs/screenshots/nexus-login-desktop.jpg)
+Não precisa instalar PostgreSQL para executar: o projeto usa H2, conforme a Aula 03. O driver PostgreSQL permanece como dependência exigida.
 
-<details>
-<summary>Ver estoque em desktop</summary>
+## Executar
 
-![Estoque da Nexus em desktop](docs/screenshots/nexus-estoque-desktop.jpg)
+Extraia o ZIP e abra um terminal dentro da pasta `projeto-n1`, onde está o `pom.xml`:
 
-</details>
-
-<details>
-<summary>Ver estoque em celular</summary>
-
-![Estoque da Nexus em celular](docs/screenshots/nexus-estoque-mobile.jpg)
-
-</details>
-
-As capturas de estoque utilizam exclusivamente dados de uma base isolada de testes. Consulte o [relatório da revisão visual e de UX](docs/REVISAO-UX.md) para as verificações e os limites registrados.
-
-## Tecnologias
-
-| Camada | Tecnologias |
-| --- | --- |
-| Backend | Java 21, Spring Boot 4.1.1, Maven Wrapper, Spring Web MVC |
-| Persistência | Spring Data JPA e H2; driver PostgreSQL disponível |
-| Dependências adicionais | Spring Security, DevTools, Validation e Mail |
-| Frontend | React, TypeScript, Vite e Axios |
-| Verificação | Testes de integração HTTP, JPA e SMTP; TypeScript e Oxlint |
-
-O `groupId` é `br.ueg.trindade`, e o pacote principal é `br.ueg.trindade.diego_web2_fullstack`. As versões das dependências estão em `pom.xml` e `src/main/frontend/package-lock.json`.
-
-## Executar localmente
-
-### Pré-requisitos
-
-- JDK 21, com `JAVA_HOME` e `PATH` configurados.
-- Node.js 22.12 ou superior da linha 22, ou Node.js 24, com npm.
-- Internet na primeira instalação das dependências.
-
-Maven e PostgreSQL não precisam ser instalados: o projeto inclui o Maven Wrapper e utiliza H2 por padrão.
-
-Clone o repositório e entre na pasta:
-
-```powershell
-git clone https://github.com/Z3NYN/diegoabreu-web2-fullstack.git
-cd diegoabreu-web2-fullstack
+```sh
+mvn clean verify
+mvn spring-boot:run
 ```
 
-### 1. Iniciar o backend
+Deixe o backend em execução. Em outro terminal, na mesma pasta do projeto:
 
-Para utilizar cadastro de conta, confirmação e recuperação por e-mail, execute no Windows PowerShell, na pasta que contém `pom.xml`:
-
-```powershell
-.\scripts\Iniciar-Com-Email.ps1
-```
-
-Na primeira execução, informe o login SMTP, o remetente verificado e a chave SMTP solicitada de forma oculta. A configuração é salva localmente com proteção do Windows e fica fora do Git. Nas próximas execuções, o script reutiliza essa configuração. Consulte a seção de configuração de e-mail abaixo para os detalhes.
-
-Para iniciar apenas a API, com o envio de e-mail desativado por padrão:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Nesse modo, contas já confirmadas podem entrar; a criação de novas contas e a recuperação exigem habilitar o SMTP. Não há usuário de demonstração ou senha padrão.
-
-### 2. Iniciar o frontend
-
-Em outro terminal, a partir da raiz do projeto:
-
-```powershell
+```sh
 cd src/main/frontend
 npm ci
-npm run dev
+npm run dev -- --port 5173 --strictPort
 ```
 
-### 3. Acessar a aplicação
+Abra **http://localhost:5173**. O frontend chama **http://localhost:8080/api**. CORS permite `http://localhost:5173` e `http://127.0.0.1:5173`. Mantenha a porta 5173 para coincidir com a configuração.
 
-Abra [http://localhost:5173](http://localhost:5173). A API utiliza `http://localhost:8080/api`. Mantenha os dois terminais em execução.
+O H2 grava o banco no diretório de execução do backend, com URL `jdbc:h2:file:./database.db`, usuário `sa` e senha vazia. Reiniciar o backend preserva os dados. Execute os comandos Maven sempre na raiz do projeto para manter o mesmo banco.
 
-No Linux ou macOS, configure as variáveis SMTP descritas na seção de e-mail e utilize `./mvnw spring-boot:run`; se necessário, conceda permissão com `chmod +x mvnw`. O script com armazenamento DPAPI é específico do Windows.
+Para compilar e conferir o frontend:
 
-O frontend utiliza a porta 5173 fixa. Se ela estiver ocupada, encerre a instância anterior. Para alterar o endereço da API, copie `src/main/frontend/.env.example` para `.env.local` e ajuste `VITE_API_URL`. Uma mudança na origem do frontend também exige ajustar o CORS no backend.
-
-## Arquitetura
-
-```mermaid
-flowchart LR
-    subgraph frontend["Frontend · React e TypeScript"]
-        pages["Páginas e componentes"] --> axios["Axios · services/api.ts"]
-    end
-    subgraph backend["Backend · Spring Boot"]
-        security["Spring Security · sessão e CSRF"] --> controllers["Controllers · /api"]
-        controllers --> services["Services · regras de negócio"]
-        services --> repositories["Repositories · Spring Data JPA"]
-        services --> email["EmailService · envio opcional"]
-    end
-    axios -->|"HTTP / JSON + cookie de sessão"| security
-    repositories --> database[("H2 · arquivo local")]
-    email -->|"SMTP / STARTTLS"| smtp["Provedor de e-mail"]
-```
-
-Spring Security exige autenticação para os cadastros e valida CSRF nas operações de escrita. Os controllers tratam as requisições e acessam apenas os services. Os services concentram as regras de negócio, e cada entidade possui um `JpaRepository`. No frontend, as páginas coordenam as operações e reutilizam componentes de formulário, listagem e item com dados recebidos por props.
-
-### Acesso à plataforma
-
-1. Configure o SMTP conforme a seção de e-mail abaixo. Sem configuração, cadastro de conta e recuperação retornam um erro explícito, sem simular entrega.
-2. Na tela inicial, selecione **Criar conta** e informe nome, username, e-mail e senha com pelo menos 12 caracteres (máximo de 72 bytes).
-3. Abra o link recebido e confirme o e-mail.
-4. Volte ao login e entre com seu e-mail ou username e senha.
-
-Os cadastros são acessíveis apenas após o login, inclusive quando alguém tenta chamar a API diretamente. A sessão expira após 30 minutos de inatividade; **Sair** a encerra no servidor. Senhas são armazenadas com BCrypt. Não há conta padrão nem senha de administrador incorporada ao projeto.
-
-Contas antigas sem senha ou com senha anterior em texto simples não permitem login. Para habilitá-las, abra **Ajuda com a confirmação de e-mail → Não recebi o link** e, após confirmar o endereço, **Esqueci minha senha**. Os registros existentes são preservados.
-
-Se o endereço foi digitado errado no cadastro, abra **Ajuda com a confirmação de e-mail → Cadastrei o endereço errado**. Informe o username ou endereço anterior, a senha cadastrada e o e-mail correto. Essa opção atende contas ainda não confirmadas: preserva a senha, invalida o link anterior e envia uma nova confirmação. O formulário também sugere conferir domínios com erros comuns de digitação, sem alterar o endereço automaticamente.
-
-```mermaid
-flowchart TD
-    inicio["Abrir Nexus"] --> sessao{"Sessão válida?"}
-    sessao -->|"Sim"| plataforma["Estoque e cadastros protegidos"]
-    sessao -->|"Não"| login["Tela de login"]
-    login --> credenciais{"Senha correta e e-mail confirmado?"}
-    credenciais -->|"Sim"| plataforma
-    credenciais -->|"Não"| aviso["Orientar correção ou confirmação"]
-    plataforma --> sair["Sair ou sessão expirar"]
-    sair --> login
-```
-
-```text
-src/
-├── main/
-│   ├── java/br/ueg/trindade/diego_web2_fullstack/
-│   │   ├── config/
-│   │   ├── controller/
-│   │   ├── model/
-│   │   ├── repository/
-│   │   └── service/
-│   ├── resources/application.properties
-│   └── frontend/
-│       ├── public/
-│       └── src/
-│           ├── components/
-│           ├── pages/
-│           ├── services/ # api.ts e estoque.ts
-│           ├── styles/   # autenticação e área de trabalho
-│           └── types/
-└── test/java/
-scripts/Iniciar-Com-Email.ps1
-```
-
-## API
-
-Os recursos de cadastro disponíveis são `usuarios`, `permissoes` e `produtos`. Os endpoints de estoque estão descritos em [Controle de estoque](#controle-de-estoque).
-
-| Método | Endpoint | Resultado |
-| --- | --- | --- |
-| GET | `/api/{recurso}` | Lista de registros — 200 |
-| GET | `/api/{recurso}/{id}` | Registro pelo identificador — 200 |
-| POST | `/api/{recurso}` | Cadastro — 201 |
-| PUT | `/api/{recurso}/{id}` | Atualização — 200 |
-| DELETE | `/api/{recurso}/{id}` | Exclusão, sem corpo — 204 |
-
-A exclusão de produto com movimentações retorna **409**, preservando o histórico. Produtos sem movimentações podem ser excluídos normalmente.
-
-Dados inválidos retornam 400; registros inexistentes, 404; conflitos de unicidade, 409. Sem sessão, os recursos protegidos retornam 401; falta de CSRF válido retorna 403. As mensagens de erro são devolvidas em JSON no campo `message`.
-
-Exemplos de corpo para cadastro:
-
-**Usuário**
-
-```json
-{"nome": "Ana Silva", "username": "ana.silva", "email": "ana@example.com"}
-```
-
-**Permissão**
-
-```json
-{"nome": "Consulta", "descricao": "Consultar registros"}
-```
-
-**Produto**
-
-```json
-{"nome": "Teclado", "preco": 99.90, "estoqueMinimo": 2}
-```
-
-A entidade `Usuario` contém o campo `senha`, oculto nas respostas por `@JsonIgnore`. O formulário de gestão utiliza nome, username e e-mail; este contrato preserva a senha existente durante a edição. A senha é definida pelo cadastro de conta ou pela recuperação, nunca pelos endpoints de edição do CRUD.
-
-### Autenticação e recuperação
-
-| Método | Endpoint | Finalidade |
-| --- | --- | --- |
-| GET | `/api/auth/csrf` | Obter token de segurança para uma operação de escrita |
-| POST | `/api/auth/registrar` | Criar conta com `nome`, `username`, `email` e `senha` |
-| POST | `/api/auth/login` | Entrar com `identificador` e `senha` |
-| GET | `/api/auth/me` | Consultar a conta da sessão autenticada |
-| POST | `/api/auth/logout` | Encerrar a sessão |
-| POST | `/api/auth/reenviar-confirmacao` | Solicitar confirmação com `email` |
-| POST | `/api/auth/corrigir-email` | Corrigir conta pendente com `identificador`, `senha` e `email` |
-| POST | `/api/auth/recuperacao` | Solicitar recuperação com `email` |
-| POST | `/api/auth/redefinir-senha` | Definir senha com `token` e `senha` |
-
-As escritas exigem o token obtido de `/api/auth/csrf` no cabeçalho `X-CSRF-TOKEN` e os cookies da mesma sessão. O frontend faz isso automaticamente. Login e confirmação rotacionam ou consomem seus respectivos tokens; nenhum token de recuperação é retornado ao navegador pela solicitação de envio.
-
-## Controle de estoque
-
-Compatível com a proposta de funcionalidades próprias da N1 (checklist, p. 1) e de regras no Service (Aula 06, p. 21). O controle de estoque complementa a entidade própria Produto e mantém os CRUDs acadêmicos.
-
-1. Cadastre um produto em **Produtos**, informando preço e estoque mínimo. O saldo inicial é zero.
-2. Em **Estoque**, busque e selecione o produto na tabela. Confira o saldo previsto e registre uma **entrada**, com quantidade inteira e motivo.
-3. Registre **saídas** para vendas, consumo ou outros destinos. O sistema impede quantidade superior ao saldo.
-4. Consulte saldo e histórico. Saldo igual ou menor que o mínimo sinaliza reposição; saldo zero aparece como sem estoque.
-
-Cada operação aceita 1 a 1.000.000 unidades; o saldo máximo é 1.000.000 por produto. Quantidades fracionárias e motivos vazios são rejeitados pelo servidor. O valor do resumo é quantidade × preço cadastrado, não faturamento nem custo contábil.
-
-Movimentações são permanentes. Para corrigir um lançamento, registre uma movimentação inversa com o motivo da correção. Produtos com histórico não podem ser excluídos, mesmo com saldo zero; os demais continuam com CRUD completo. O frontend fornece uma chave UUID por operação e conserva a mesma chave ao repetir uma tentativa com os mesmos dados. Bloqueio de linha e transação garantem que saldo e histórico sejam gravados juntos, impedindo saídas concorrentes acima do saldo. Idempotência evita duplicação quando a mesma solicitação chega novamente; não agrupa operações diferentes.
-
-| Método | Endpoint | Finalidade |
-| --- | --- | --- |
-| GET | `/api/estoque/resumo` | Totais e alertas de reposição |
-| GET | `/api/estoque/produtos/{id}/movimentacoes` | Últimas 100 movimentações e total do histórico |
-| POST | `/api/estoque/produtos/{id}/movimentacoes` | Registrar entrada ou saída |
-
-Corpo de movimentação (o frontend gera a chave automaticamente):
-
-```json
-{"tipo":"ENTRADA","quantidade":10,"motivo":"Reposição de mercadoria","chave":"986f5135-5db8-4fbb-af3a-2ea7aa9a8040"}
-```
-
-Endpoints protegidos por sessão e CSRF. O usuário responsável é obtido da sessão, nunca do corpo enviado pelo cliente. O histórico exibe os últimos 100 registros; os anteriores permanecem no banco. Estoque é compartilhado entre usuários autenticados, com os mesmos controles de acesso dos cadastros existentes.
-
-```mermaid
-sequenceDiagram
-    actor Pessoa
-    participant React
-    participant Controller
-    participant Service
-    participant H2
-    Pessoa->>React: Informar entrada ou saída e motivo
-    React->>Controller: POST com sessão, CSRF e chave da operação
-    Controller->>Service: Pedido e usuário da sessão
-    Service->>H2: Bloquear linha do produto
-    Service->>Service: Validar quantidade, chave e saldo
-    alt Pedido já registrado com os mesmos dados
-        Service-->>React: Retornar movimentação existente
-    else Nova operação válida
-        Service->>H2: Gravar saldo e histórico na mesma transação
-        Service-->>React: Movimentação registrada
-    else Saldo insuficiente ou pedido inválido
-        Service-->>React: Erro sem alterar saldo
-    end
-    React->>Controller: Recarregar resumo, produtos e histórico
-```
-
-## Banco de dados
-
-A configuração padrão está em `src/main/resources/application.properties`:
-
-```properties
-spring.datasource.url=jdbc:h2:file:./data/database
-spring.jpa.hibernate.ddl-auto=update
-```
-
-Execute o backend sempre pela raiz do projeto para utilizar o mesmo arquivo `data/database.mv.db`. Esse banco e os artefatos de compilação ficam fora do Git. Os testes utilizam bancos em memória isolados. O console H2 permanece desativado.
-
-### Modelo de dados
-
-As entidades possuem identificador gerado automaticamente. Usuario, Permissao e Produto mantêm seus CRUDs. MovimentacaoEstoque registra os identificadores do produto e do usuário sem introduzir relacionamentos JPA adicionais. `Permissao` representa um cadastro acadêmico; não determina o acesso ao CRUD.
-
-```mermaid
-erDiagram
-    Usuario {
-        Long id PK
-        String nome
-        String username UK
-        String senha "Oculta na API"
-        String email UK
-        boolean emailConfirmado
-        String confirmacaoHash "Interno; SHA-256"
-        Instant confirmacaoExpiraEm "Interno"
-        Instant confirmacaoEnviadaEm "Interno"
-        String recuperacaoHash "Interno; SHA-256"
-        Instant recuperacaoExpiraEm "Interno"
-        Instant recuperacaoEnviadaEm "Interno"
-        long versaoCredencial "Interno; invalidação de sessões"
-    }
-    Permissao {
-        Long id PK
-        String nome
-        String descricao
-    }
-    Produto {
-        Long id PK
-        String nome
-        BigDecimal preco "Até duas casas decimais"
-        int quantidade "Saldo; somente leitura na API"
-        int estoqueMinimo
-    }
-    MovimentacaoEstoque {
-        Long id PK
-        String chave UK "Idempotência; interno"
-        Long produtoId
-        Long usuarioId
-        String tipo "ENTRADA ou SAIDA"
-        int quantidade
-        int saldoAnterior
-        int saldoAtual
-        String motivo
-        Instant criadoEm
-    }
-```
-
-`PK` identifica a chave primária e `UK`, os campos únicos. O diagrama mostra os atributos persistidos; `statusEmail` é calculado a partir do estado de confirmação.
-
-## Confirmação de e-mail
-
-Esta funcionalidade adicional requer uma conta SMTP e um remetente verificado. Por padrão, o envio está desativado, e o usuário aparece como **pendente de envio**. A aplicação não simula uma confirmação entregue.
-
-Quando habilitado, o cadastro ou a troca de endereço envia um link. O token é armazenado apenas como hash, expira em 24 horas e é invalidado após uso ou reenvio. O intervalo mínimo entre reenvios é de 60 segundos. A página solicita um clique explícito para confirmar o endereço.
-
-### Fluxo de confirmação
-
-O diagrama representa o caminho bem-sucedido com SMTP habilitado. A chegada da mensagem depende do provedor e da caixa de entrada do destinatário.
-
-```mermaid
-sequenceDiagram
-    actor Pessoa
-    participant UI as Nexus · React
-    participant API as API · UsuarioService
-    participant DB as H2
-    participant SMTP as Provedor SMTP
-
-    Pessoa->>UI: Cadastrar usuário com e-mail
-    UI->>API: POST /api/usuarios
-    API->>API: Validar dados e gerar token
-    API->>DB: Gravar usuário, hash e validade na transação
-    API->>SMTP: Enviar link com o token
-    SMTP-->>API: Aceitar mensagem para envio
-    API->>DB: Concluir transação
-    API-->>UI: 201 · Aguardando confirmação
-    Note over SMTP,Pessoa: Entrega ao destinatário depende do provedor
-    Pessoa->>UI: Abrir link e clicar em confirmar
-    UI->>API: POST /api/usuarios/confirmar-email
-    API->>DB: Buscar hash com bloqueio de atualização
-    DB-->>API: Usuário e validade do token
-    API->>API: Validar token e expiração
-    API->>DB: Confirmar e-mail e invalidar token
-    API-->>UI: 204 · Confirmação concluída
-    UI-->>Pessoa: Exibir confirmação
-```
-
-| Método | Endpoint | Ação |
-| --- | --- | --- |
-| POST | `/api/usuarios/{id}/confirmacao-email` | Enviar ou reenviar a confirmação |
-| POST | `/api/usuarios/confirmar-email` | Confirmar com o corpo `{"token":"token-do-link"}` |
-
-### Configuração com Brevo
-
-1. Crie uma conta na Brevo, verifique o remetente e habilite o envio transacional conforme as instruções do provedor.
-2. Obtenha o login SMTP e uma chave SMTP na seção SMTP & API.
-3. Encerre o backend que estiver rodando e execute, na raiz:
-
-```powershell
-.\scripts\Iniciar-Com-Email.ps1
-```
-
-Na primeira execução, o script solicita a chave de forma oculta e salva a configuração em `.nexus/smtp.clixml`, fora do Git. A chave é criptografada pelo Windows para o usuário que a salvou (DPAPI); não é portável para outra conta ou computador. O backend utiliza SMTP com STARTTLS, e as variáveis de ambiente alteradas são restauradas ao encerrar. Mantenha o frontend em outro terminal. Não coloque credenciais no código, no frontend ou no Git.
-
-Para salvar os dados antes de iniciar o backend:
-
-```powershell
-.\scripts\Iniciar-Com-Email.ps1 -Configurar -SomenteConfigurar
-```
-
-Nas próximas execuções, use o script sem parâmetros. Para substituir as credenciais, use `-Configurar`.
-
-Outros provedores podem ser configurados com estas variáveis de ambiente:
-
-| Variável | Finalidade |
-| --- | --- |
-| `NEXUS_EMAIL_ENABLED` | `true` para habilitar o envio |
-| `NEXUS_EMAIL_FROM` | Endereço do remetente verificado |
-| `SMTP_HOST` / `SMTP_PORT` | Servidor SMTP e porta; padrão de porta 587 |
-| `SMTP_USERNAME` / `SMTP_PASSWORD` | Credenciais SMTP |
-| `SMTP_AUTH` / `SMTP_STARTTLS` | Autenticação e TLS; padrão `true` |
-| `NEXUS_FRONTEND_URL` | Endereço para o link; padrão `http://localhost:5173` |
-
-O endereço `localhost` funciona apenas no computador em que a aplicação está rodando. Aceitação pelo SMTP não garante chegada à caixa de entrada. O protocolo foi testado localmente e a confirmação pela Brevo foi recebida e concluída pelo autor. Cada instalação precisa configurar suas próprias credenciais; recebimento do link de recuperação na caixa pessoal não foi verificado.
-
-### Recuperação de senha
-
-Em **Esqueci minha senha**, informe o e-mail confirmado da conta. O link enviado abre uma tela para definir e repetir a nova senha. O token é aleatório, armazenado como hash e expira em 30 minutos. Um novo envio invalida o link anterior; após a troca de senha, o token é consumido e as sessões anteriores deixam de permitir acesso.
-
-Solicitações para endereços inexistentes ou ainda não confirmados recebem a mesma resposta genérica, sem divulgar quais contas existem. O envio tem intervalo mínimo de 60 segundos por conta; login é limitado a 10 tentativas por minuto por IP, e os fluxos de cadastro/recuperação/reenvio/redefinição compartilham um limite de 20 solicitações por minuto por IP. Esses limites são locais ao processo e reiniciam com o servidor.
-
-```mermaid
-sequenceDiagram
-    actor Pessoa
-    participant UI as Nexus
-    participant API as AuthService
-    participant DB as H2
-    participant SMTP as Provedor SMTP
-    Pessoa->>UI: Esqueci minha senha
-    UI->>API: Solicitar recuperação por e-mail
-    API->>DB: Buscar conta confirmada e registrar hash do token
-    API->>SMTP: Enviar link com validade de 30 minutos
-    SMTP-->>API: Aceitar mensagem para envio
-    API-->>UI: Resposta genérica de solicitação
-    Note over Pessoa,SMTP: Recebimento depende do provedor externo
-    Pessoa->>UI: Abrir link e informar nova senha
-    UI->>API: Token e nova senha
-    API->>DB: Bloquear registro e validar hash e validade
-    API->>DB: Salvar BCrypt, consumir token e incrementar versão da credencial
-    API-->>UI: Senha atualizada
-    Pessoa->>UI: Entrar com a nova senha
-```
-
-Referência: [documentação SMTP da Brevo](https://help.brevo.com/hc/en-us/articles/7924908994450-Send-transactional-emails-using-Brevo-SMTP).
-
-## Verificação
-
-Na raiz:
-
-```powershell
-.\mvnw.cmd verify
-```
-
-No frontend:
-
-```powershell
-cd src/main/frontend
+```sh
 npm run build
 npm run lint
 ```
 
-Na verificação de **03/10/2026**, os **31 testes** passaram, assim como a compilação e o lint do frontend. A suíte cobre CRUD autenticado, bloqueio de operações anônimas, CSRF, senha BCrypt, login condicionado à confirmação, logout, invalidação de sessões, expiração, reenvio e consumo concorrente da recuperação, além da correção de e-mail condicionada à senha. Os dois tipos de mensagem foram enviados pelo protocolo SMTP a um servidor local de teste. O SMTP externo da Brevo também foi configurado e testado; o autor confirmou o recebimento da confirmação e a ativação da conta. O recebimento do link de recuperação na caixa pessoal não foi verificado, embora o fluxo tenha testes HTTP e SMTP aprovados. A persistência em arquivo e o CRUD das três entidades também foram verificados anteriormente com a aplicação em execução.
+## API
 
-O projeto compila para Java 21. A execução disponível nesta auditoria utilizou JDK 22; a execução especificamente no JDK 21 ainda precisa ser confirmada.
+| Recurso | Coleção | Registro |
+| --- | --- | --- |
+| Usuario | `/api/usuarios` | `/api/usuarios/{id}` |
+| Permissao | `/api/permissoes` | `/api/permissoes/{id}` |
+| Produto | `/api/produtos` | `/api/produtos/{id}` |
 
-A revisão visual de 03/10/2026 também passou por build e lint. A aplicação foi inspecionada em desktop, tablet e celular, nas larguras de 320 a 1280 px. Entradas, saídas, criação e edição de produto foram executadas em banco separado. Navegação por teclado, foco, contraste, mensagens e estados vazios foram conferidos. A animação foi desativada no celular; a regra de movimento reduzido foi verificada no CSS e no build, sem emulação da preferência do sistema. As evidências completas estão em [Revisão visual e de UX](docs/REVISAO-UX.md).
+`GET` da coleção lista; `GET` por ID consulta; `POST` na coleção cadastra; `PUT` por ID atualiza; `DELETE` por ID exclui. Os IDs de consulta, atualização e exclusão são recebidos por `@PathVariable`. Um ID inexistente retorna 404 e preço negativo retorna 400.
 
-## Escopo acadêmico
+Exemplos de corpo para POST:
 
-Esta entrega atende ao escopo técnico da N1: aplicação em camadas, entidade própria `Produto` e integração React → API → H2. A confirmação de e-mail é uma evolução adicional solicitada para a Nexus.
+```json
+{"nome":"Ana","username":"ana","senha":"senha-de-estudo","email":"ana@example.com"}
+```
 
-Login obrigatório, confirmação e recuperação de senha foram adicionados a pedido do autor após o escopo original da N1. A autenticação utiliza sessão no servidor, sem JWT. Todas as contas autenticadas e confirmadas podem acessar os três cadastros; o cadastro de permissões ainda não implementa perfis de autorização.
+```json
+{"nome":"CADASTRAR","descricao":"Permissão de cadastro"}
+```
 
-O backend permanece limitado a `127.0.0.1` por padrão. Para exposição pública, são necessários HTTPS, `SESSION_COOKIE_SECURE=true`, configuração adequada de origem/CORS e avaliação dos controles de autorização. SMTP e banco não possuem fila transacional conjunta. Upload, deploy e relacionamentos adicionais ficam fora desta entrega.
+```json
+{"nome":"Caderno","descricao":"Caderno simples","preco":12.50}
+```
 
-Consulte o [checklist da avaliação](CHECKLIST-N1.md) e o [relatório de auditoria](AUDITORIA.md) para as evidências e pendências. O compartilhamento do link com o professor e a avaliação do histórico de commits fazem parte da entrega acadêmica.
+Para atualizar Usuario, envie `nome`, `username` e `email`. A senha continua sendo a do cadastro, mesmo se um cliente enviar outro valor no PUT.
 
-## Autor
+Este é o estágio acadêmico das Aulas 01–06: não há login, JWT ou controle de acesso e a senha é armazenada como no CRUD didático. Use dados fictícios ao demonstrar a atividade.
 
-**Diego Abreu** · Programação Web II · Universidade Estadual de Goiás.
+## Conferência dos materiais
+
+| Material | Aplicação no projeto |
+| --- | --- |
+| Aula 01, páginas 12–16 | Spring Boot 4.1.0, Java 21, Maven, grupo, dependências e Vite/TypeScript |
+| Aula 02, páginas 14–19 | Usuario, senha fora do JSON, Permissao e entidade própria |
+| Aula 03, páginas 7–18 | JPA, JpaRepository, H2 em arquivo e operações REST |
+| Aula 04, páginas 10–18 | Axios, CORS, props, estado, efeitos e erros de requisição |
+| Aula 05, páginas 4–15 | Formulários, PUT/DELETE, atualização da lista e senha preservada no PUT |
+| Aula 06, páginas 3–21 | Controller → Service → Repository, páginas e regra de negócio própria |
+| Avaliação N1, páginas 2–4 | Checklist de ambiente, backend, frontend e integração |
+
+A imagem do Spring Initializr seleciona **Java 25**: para esta avaliação, corrija para **21**. A imagem também não lista **Spring Security**, que deve ser acrescentado. Rest Repositories consta da Aula 01 e foi incluído. O nome do pacote Java utiliza `braullyweb2fullstack`, sem os hífens exibidos no campo da imagem, pois hífens não são válidos em identificadores Java.
+
+## Publicar no GitHub
+
+O projeto **não foi publicado** e nenhum repositório remoto foi criado por esta entrega.
+
+1. No GitHub, crie um repositório vazio para a atividade, sem inicializar README ou `.gitignore`.
+2. Abra um terminal na raiz `projeto-n1` e execute:
+
+```sh
+git init
+git add .
+git commit -m "Implementa atividade N1 de Programacao Web II"
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+git push -u origin main
+```
+
+Substitua a URL pelo endereço real do repositório e autentique-se quando solicitado. O `.gitignore` exclui o banco local, os pacotes instalados e os arquivos gerados pelos builds.
+
+3. Confira no GitHub se as fontes, `pom.xml`, `package-lock.json` e estas instruções apareceram.
+4. Copie o link do repositório e envie na atividade N1 no Google Sala de Aula.
+5. Em alterações futuras, faça commits reais e frequentes. O histórico de trabalho anterior não foi inventado; esta entrega não comprova commits regulares ao longo do semestre.
+
+Os testes efetivamente executados e seus limites estão em [TESTES.md](TESTES.md).
